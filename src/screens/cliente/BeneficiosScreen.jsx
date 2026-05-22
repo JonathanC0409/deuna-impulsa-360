@@ -49,7 +49,7 @@ export default function BeneficiosScreen() {
   };
 
   const irRuleta = () => {
-    router.push('/ruleta');
+    router.replace('/ruleta');
   };
 
   return (

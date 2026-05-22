@@ -1,6 +1,6 @@
 import { supabase } from '../config/supabase';
-import { crearAlertaNegocio } from './alertaService';
-import { obtenerItemPorId, actualizarItemNegocio } from './itemService';
+import { crearAlertaNegocio, existeAlertaPendiente } from './alertaService';
+import { obtenerItemPorId, actualizarItemNegocio, obtenerItemsNegocio } from './itemService';
 import {
   calcularEstadoStock,
   requiereAlertaInventario,
@@ -159,13 +159,21 @@ export async function descontarStock(item, cantidad) {
 async function crearAlertaPorEstado(item, estado) {
   if (!requiereAlertaInventario(estado)) return null;
 
+  const yaExiste = await existeAlertaPendiente({
+    idNegocio: item.IdNegocio,
+    idItemNegocio: item.IdItemNegocio,
+    tipoAlerta: 'Inventario',
+  });
+
+  if (yaExiste) return null;
+
   const nivel = estado === 'Agotado' || estado === 'Critico' ? 'Alto' : 'Medio';
 
   return crearAlertaNegocio({
     IdNegocio: item.IdNegocio,
     IdItemNegocio: item.IdItemNegocio,
     Titulo: `Stock ${estado.toLowerCase()}`,
-    Mensaje: `${item.Nombre}: inventario en estado ${estado}`,
+    Mensaje: `${item.Nombre}: inventario en estado ${estado} (${item.Stock ?? 0} uds.).`,
     TipoAlerta: 'Inventario',
     Nivel: nivel,
     Leida: false,
@@ -335,6 +343,75 @@ export async function simularPagoCliente({
     idItemNegocio,
     cantidad,
   });
+}
+
+/**
+ * Simula pago QR con monto ingresado por el cliente (venta + detalle en Supabase).
+ */
+export async function simularPagoClientePorMonto({ idCliente, idNegocio, monto }) {
+  const montoNum = Number(String(monto).replace(',', '.'));
+
+  if (!idCliente) {
+    throw new Error('Inicia sesión como cliente para pagar.');
+  }
+  if (!idNegocio) {
+    throw new Error('No se encontró el comercio.');
+  }
+  if (!montoNum || Number.isNaN(montoNum) || montoNum < 1) {
+    throw new Error('Ingresa un monto válido de al menos $1.00.');
+  }
+
+  const items = await obtenerItemsNegocio(idNegocio);
+  const item =
+    items.find((i) => i.Activo !== false && i.Estado !== 'Agotado') ?? items[0];
+
+  if (!item) {
+    throw new Error(
+      'Este comercio no tiene productos registrados. Pide al negocio que cree ítems en inventario.'
+    );
+  }
+
+  const ventaRes = await supabase
+    .from(TABLE_VENTAS)
+    .insert({
+      IdNegocio: idNegocio,
+      IdCliente: idCliente,
+      Total: montoNum,
+      MetodoPago: 'Deuna QR',
+      EstadoPago: 'Confirmado',
+      FechaVenta: new Date().toISOString(),
+      GeneroGiro: true,
+    })
+    .select()
+    .single();
+
+  if (ventaRes.error) {
+    console.error('[simularPagoClientePorMonto] venta:', ventaRes.error);
+    throw new Error(ventaRes.error.message ?? 'No se pudo registrar el pago.');
+  }
+
+  const detalleRes = await supabase
+    .from(TABLE_DETALLES)
+    .insert({
+      IdVenta: ventaRes.data.IdVenta,
+      IdItemNegocio: item.IdItemNegocio,
+      Cantidad: 1,
+      PrecioUnitario: montoNum,
+      Subtotal: montoNum,
+    })
+    .select()
+    .single();
+
+  if (detalleRes.error) {
+    console.error('[simularPagoClientePorMonto] detalle:', detalleRes.error);
+    throw new Error(detalleRes.error.message ?? 'No se pudo registrar el detalle del pago.');
+  }
+
+  return {
+    venta: ventaRes.data,
+    detalle: detalleRes.data,
+    total: montoNum,
+  };
 }
 
 export async function obtenerUltimasVentasNegocio(idNegocio, limite = 5) {

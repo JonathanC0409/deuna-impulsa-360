@@ -7,6 +7,8 @@ import CashbackCard from '../../components/cliente/CashbackCard';
 import { colors, spacing } from '../../components/cliente/clienteTheme';
 import { MOCK_PAGO } from '../../components/cliente/mockClienteData';
 import { useAuth } from '../../context/AuthContext';
+import { irARuleta } from '../../navigation/ruletaNavigation';
+import { navigateSafe } from '../../navigation/appRoutes';
 
 export default function PagoExitosoScreen({ navigation, route }) {
   const router = useRouter();
@@ -24,35 +26,17 @@ export default function PagoExitosoScreen({ navigation, route }) {
 
   const irRuleta = () => {
     if (!ventaId || !usuario?.IdUsuario || !negocioId) {
-      navigation.navigate('ClienteTabs');
+      navigateSafe(router, 'ClienteTabs');
       return;
     }
 
-    const ruletaParams = {
+    irARuleta(router, {
       ventaId,
       usuarioId: usuario.IdUsuario,
       negocioId,
       montoVenta: monto,
       nombreNegocio: comercio,
-      esHorarioPromocional: String(esHorarioPromocional),
-    };
-
-    const parent = navigation.getParent?.()?.getParent?.();
-    if (parent?.navigate) {
-      parent.navigate('Ruleta', ruletaParams);
-      return;
-    }
-
-    router.push({
-      pathname: '/ruleta',
-      params: {
-        ventaId: String(ruletaParams.ventaId),
-        usuarioId: String(ruletaParams.usuarioId),
-        negocioId: String(ruletaParams.negocioId),
-        montoVenta: String(ruletaParams.montoVenta),
-        nombreNegocio: ruletaParams.nombreNegocio,
-        esHorarioPromocional: ruletaParams.esHorarioPromocional,
-      },
+      esHorarioPromocional,
     });
   };
 
@@ -81,18 +65,29 @@ export default function PagoExitosoScreen({ navigation, route }) {
         />
 
         {ventaId ? (
-          <Text style={styles.giroHint}>
-            Tienes un giro en la ruleta. Niveles según monto, compras en el negocio y horario
-            promocional.
-          </Text>
-        ) : null}
-
-        <DeunaButton
-          title={ventaId ? 'Girar ruleta ahora' : 'Volver al inicio'}
-          variant="cashback"
-          onPress={ventaId ? irRuleta : () => navigation.navigate('ClienteTabs')}
-          style={styles.btn}
-        />
+          <>
+            <View style={styles.giroBanner}>
+              <Text style={styles.giroBannerTitle}>🎡 ¡Ganaste un giro en la ruleta!</Text>
+              <Text style={styles.giroHint}>
+                Tu pago de ${monto.toFixed(2)} fue registrado. Gira ahora y guarda tu premio en
+                Supabase.
+              </Text>
+            </View>
+            <DeunaButton
+              title="Girar ruleta ahora"
+              variant="cashback"
+              onPress={irRuleta}
+              style={styles.btn}
+            />
+          </>
+        ) : (
+          <DeunaButton
+            title="Volver al inicio"
+            variant="cashback"
+            onPress={() => navigation.navigate('ClienteTabs')}
+            style={styles.btn}
+          />
+        )}
         <DeunaButton
           title="Volver al inicio"
           variant="outline"
@@ -171,11 +166,25 @@ const styles = StyleSheet.create({
   cashback: {
     marginBottom: spacing.md,
   },
+  giroBanner: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: 16,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  giroBannerTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
   giroHint: {
     fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
-    marginBottom: spacing.lg,
     lineHeight: 18,
   },
   btn: {

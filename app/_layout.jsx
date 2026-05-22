@@ -73,6 +73,24 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen name="ruleta" />
+            <Stack.Screen
+              name="CrearPromocion"
+              options={{
+                headerShown: true,
+                title: 'Crear promoción',
+                headerStyle: { backgroundColor: colors.primary },
+                headerTintColor: colors.white,
+              }}
+            />
+            <Stack.Screen
+              name="EditarPromocion"
+              options={{
+                headerShown: true,
+                title: 'Editar promoción',
+                headerStyle: { backgroundColor: colors.primary },
+                headerTintColor: colors.white,
+              }}
+            />
           </Stack>
         </RootNavigationGuard>
       </AuthProvider>

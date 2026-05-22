@@ -30,7 +30,7 @@ const MENU_ITEMS = [
     label: 'Beneficios',
     subtitle: 'Club Deuna y promociones',
     icon: 'star-outline',
-    route: '/beneficios',
+    route: '/cliente/beneficios',
   },
   {
     id: 'promociones',

@@ -1,6 +1,7 @@
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import PagoExitosoScreen from '../../src/screens/cliente/PagoExitosoScreen';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../../src/context/AuthContext';
+import { irARuleta } from '../../src/navigation/ruletaNavigation';
+import PagoExitosoScreen from '../../src/screens/cliente/PagoExitosoScreen';
 
 export default function PagoExitosoPage() {
   const router = useRouter();
@@ -22,22 +23,28 @@ export default function PagoExitosoPage() {
         router.replace('/cliente');
         return;
       }
-      router.push({ pathname: `/cliente/${name}`, params: navParams });
+      const known = {
+        'mis-recompensas': '/cliente/mis-recompensas',
+        'pago-exitoso': '/cliente/pago-exitoso',
+        beneficios: '/cliente/beneficios',
+        billetera: '/cliente/billetera',
+      };
+      const path = known[name];
+      if (path) {
+        router.push({ pathname: path, params: navParams });
+      }
     },
     getParent: () => ({
       getParent: () => ({
         navigate: (name, p) => {
           if (name === 'Ruleta') {
-            router.push({
-              pathname: '/ruleta',
-              params: {
-                ventaId: String(p?.ventaId ?? routeParams.ventaId),
-                usuarioId: String(p?.usuarioId ?? usuario?.IdUsuario ?? ''),
-                negocioId: String(p?.negocioId ?? routeParams.negocioId),
-                montoVenta: String(p?.montoVenta ?? routeParams.monto),
-                nombreNegocio: p?.nombreNegocio ?? params.comercio,
-                esHorarioPromocional: String(p?.esHorarioPromocional ?? false),
-              },
+            irARuleta(router, {
+              ventaId: p?.ventaId ?? routeParams.ventaId,
+              usuarioId: p?.usuarioId ?? usuario?.IdUsuario,
+              negocioId: p?.negocioId ?? routeParams.negocioId,
+              montoVenta: p?.montoVenta ?? routeParams.monto,
+              nombreNegocio: p?.nombreNegocio ?? params.comercio,
+              esHorarioPromocional: p?.esHorarioPromocional ?? routeParams.esHorarioPromocional,
             });
           }
         },

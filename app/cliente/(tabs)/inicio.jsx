@@ -4,10 +4,12 @@ import { createExpoNavigationShim } from '../../../src/navigation/expoNavigation
 
 const ROUTES = {
   PagoExitoso: '/cliente/pago-exitoso',
+  MisRecompensas: '/cliente/mis-recompensas',
+  Billetera: '/cliente/billetera',
+  Beneficios: '/cliente/beneficios',
   Ruleta: '/ruleta',
   Promociones: '/promociones',
   Negocio: '/negocio',
-  Beneficios: '/cliente/(tabs)/beneficios',
 };
 
 export default function InicioPage() {

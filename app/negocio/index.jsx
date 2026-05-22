@@ -5,6 +5,9 @@ import { createExpoNavigationShim } from '../../src/navigation/expoNavigationShi
 const ROUTES = {
   ItemsNegocio: '/negocio/items-negocio',
   RegistrarVenta: '/negocio/registrar-venta',
+  CrearPromocion: '/CrearPromocion',
+  PromocionesNegocio: '/negocio/promociones',
+  EditarPromocion: '/EditarPromocion',
   Cliente: '/cliente',
 };
 

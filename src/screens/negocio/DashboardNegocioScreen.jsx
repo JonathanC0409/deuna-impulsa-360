@@ -7,7 +7,9 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
@@ -16,6 +18,7 @@ import { colors } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
 import { obtenerResumenDashboard } from '../../services/ventaService';
 import { listarAlertasActivas } from '../../services/alertaService';
+import { sincronizarTodasAlertasNegocio } from '../../services/inventarioAlertaService';
 
 export default function DashboardNegocioScreen({ navigation }) {
   const router = useRouter();
@@ -28,9 +31,11 @@ export default function DashboardNegocioScreen({ navigation }) {
   const cargar = async () => {
     try {
       if (!idNegocio) return;
+      await sincronizarTodasAlertasNegocio(idNegocio);
+
       const [data, alertasData] = await Promise.all([
         obtenerResumenDashboard(idNegocio),
-        listarAlertasActivas(idNegocio, 3),
+        listarAlertasActivas(idNegocio, 5),
       ]);
       setResumen(data);
       setAlertas(alertasData);
@@ -114,12 +119,31 @@ export default function DashboardNegocioScreen({ navigation }) {
           {alertas.length === 0 ? (
             <Text style={styles.sinAlertas}>Sin alertas pendientes</Text>
           ) : (
-            alertas.map((a) => (
-              <View key={a.IdAlertaNegocio} style={styles.alertaItem}>
-                <Text style={styles.alertaTitulo}>{a.Titulo}</Text>
-                <Text style={styles.alertaMsg}>{a.Mensaje}</Text>
-              </View>
-            ))
+            alertas.map((a) => {
+              const puedePromo =
+                a.IdItemNegocio &&
+                (a.TipoAlerta === 'Inventario' || a.TipoAlerta === 'Rotacion');
+
+              return (
+                <View key={a.IdAlertaNegocio} style={styles.alertaItem}>
+                  <Text style={styles.alertaTitulo}>{a.Titulo}</Text>
+                  <Text style={styles.alertaMsg}>{a.Mensaje}</Text>
+                  {puedePromo ? (
+                    <Pressable
+                      style={styles.alertaPromoBtn}
+                      onPress={() =>
+                        navigation.navigate('CrearPromocion', {
+                          idItemNegocio: String(a.IdItemNegocio),
+                        })
+                      }
+                    >
+                      <Ionicons name="pricetag" size={16} color={colors.cashback} />
+                      <Text style={styles.alertaPromoText}>Crear promoción del producto</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              );
+            })
           )}
         </DeunaCard>
 
@@ -140,10 +164,17 @@ export default function DashboardNegocioScreen({ navigation }) {
           style={styles.gap}
         />
         <DeunaButton
-  title="Crear promoción"
-  variant="outline"
-  onPress={() => navigation.navigate('CrearPromocion')}
-/>
+          title="Mis promociones"
+          variant="outline"
+          onPress={() => navigation.navigate('PromocionesNegocio')}
+          style={styles.gap}
+        />
+        <DeunaButton
+          title="Crear promoción"
+          variant="cashback"
+          onPress={() => navigation.navigate('CrearPromocion')}
+          style={styles.gap}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -172,5 +203,21 @@ const styles = StyleSheet.create({
   alertaItem: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.border },
   alertaTitulo: { fontSize: 14, fontWeight: '600', color: colors.text },
   alertaMsg: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
+  alertaPromoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#E6FBF4',
+  },
+  alertaPromoText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.cashback,
+  },
   gap: { marginTop: 12 },
 });

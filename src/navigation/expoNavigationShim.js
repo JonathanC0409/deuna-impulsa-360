@@ -1,23 +1,30 @@
+import { APP_ROUTES, navigateSafe, resolveAppPath } from './appRoutes';
+
 /**
  * Adapta navigation.navigate() de React Navigation a rutas de Expo Router.
  */
 export function createExpoNavigationShim(router, routeMap = {}) {
+  const mergedMap = { ...APP_ROUTES, ...routeMap };
+
   const navigate = (name, params) => {
     if (params?.screen) {
-      const nestedPath = routeMap[params.screen];
+      const nestedPath = resolveAppPath(params.screen) ?? mergedMap[params.screen];
       if (nestedPath) {
         router.push({ pathname: nestedPath, params: params.params });
         return;
       }
-    }
-
-    const path = routeMap[name];
-    if (path) {
-      router.push({ pathname: path, params });
+      console.warn(`[nav] Pantalla anidada desconocida: ${params.screen}`);
       return;
     }
 
-    router.push(name);
+    if (!navigateSafe(router, name, params)) {
+      const path = mergedMap[name];
+      if (path) {
+        router.push({ pathname: path, params });
+      } else {
+        console.warn(`[nav] Ruta no encontrada: "${name}"`);
+      }
+    }
   };
 
   const parentNav = {
@@ -25,12 +32,13 @@ export function createExpoNavigationShim(router, routeMap = {}) {
     getParent: () => ({
       navigate: (name, params) => {
         if (name === 'Cliente' && params?.screen === 'PagoExitoso') {
-          router.push({ pathname: '/cliente/pago-exitoso', params: params.params });
+          router.push({
+            pathname: APP_ROUTES.ClientePagoExitoso,
+            params: params.params,
+          });
           return;
         }
-        const rootPath = routeMap[name];
-        if (rootPath) router.push({ pathname: rootPath, params });
-        else router.push(name);
+        navigate(name, params);
       },
       getParent: () => null,
     }),
@@ -39,6 +47,7 @@ export function createExpoNavigationShim(router, routeMap = {}) {
   return {
     navigate,
     goBack: () => router.back(),
+    replace: (name, params) => navigateSafe(router, name, params, { replace: true }),
     getParent: () => parentNav,
   };
 }

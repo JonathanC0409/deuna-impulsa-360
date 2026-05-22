@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -20,6 +21,7 @@ import { colors, spacing, radii } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 import { obtenerItemsNegocio } from '../../services/itemService';
 import { crearPromocionNegocio } from '../../services/promocionNegocioService';
+import { parseRouteParam } from '../../navigation/appRoutes';
 
 const TIPOS = ['Cashback', 'Descuento', 'Giro Especial'];
 
@@ -59,8 +61,12 @@ function ItemModal({ visible, data, onSelect, onClose }) {
   );
 }
 
-export default function CrearPromocionScreen({ navigation }) {
+export default function CrearPromocionScreen({ navigation, route }) {
+  const router = useRouter();
   const { idNegocio } = useAuth();
+  const idItemParam = parseRouteParam(route?.params?.idItemNegocio);
+  const nombreItemParam = parseRouteParam(route?.params?.nombreItem);
+  const prefillHecho = useRef(false);
 
   const [items, setItems] = useState([]);
   const [itemSeleccionado, setItemSeleccionado] = useState(null);
@@ -78,9 +84,14 @@ export default function CrearPromocionScreen({ navigation }) {
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
+    prefillHecho.current = false;
+
     async function cargar() {
       try {
-        if (!idNegocio) return;
+        if (!idNegocio) {
+          Alert.alert('Sesión', 'Inicia sesión como negocio para crear promociones.');
+          return;
+        }
 
         const data = await obtenerItemsNegocio(idNegocio);
         setItems(data ?? []);
@@ -93,6 +104,22 @@ export default function CrearPromocionScreen({ navigation }) {
 
     cargar();
   }, [idNegocio]);
+
+  useEffect(() => {
+    if (!idItemParam || items.length === 0 || prefillHecho.current) return;
+
+    const item = items.find((i) => String(i.IdItemNegocio) === String(idItemParam));
+    if (!item) return;
+
+    prefillHecho.current = true;
+    setItemSeleccionado(item);
+    setTitulo(`Promo ${nombreItemParam ?? item.Nombre}`);
+    setDescripcion(
+      `Impulsa las ventas de ${item.Nombre}. Producto con stock bajo — beneficio exclusivo Deuna.`
+    );
+    setTipoPromocion('Descuento');
+    setValorDescuento('10');
+  }, [idItemParam, nombreItemParam, items]);
 
   const guardarPromocion = async () => {
     if (!idNegocio) {
@@ -124,9 +151,12 @@ export default function CrearPromocionScreen({ navigation }) {
     setGuardando(true);
 
     try {
-      await crearPromocionNegocio({
+      const idItemFinal =
+        itemSeleccionado?.IdItemNegocio ?? (idItemParam ? Number(idItemParam) : null);
+
+      const creada = await crearPromocionNegocio({
         IdNegocio: idNegocio,
-        IdItemNegocio: itemSeleccionado?.IdItemNegocio ?? null,
+        IdItemNegocio: idItemFinal,
         Titulo: titulo.trim(),
         Descripcion: descripcion.trim(),
         TipoPromocion: tipoPromocion,
@@ -137,18 +167,27 @@ export default function CrearPromocionScreen({ navigation }) {
         FechaFin: fechaFin.toISOString(),
       });
 
+      if (!creada?.IdPromocion) {
+        throw new Error('La promoción no se guardó. Revisa tu conexión.');
+      }
+
       Alert.alert(
-        'Promoción creada',
-        'La promoción ya está disponible para los clientes.',
+        '¡Promoción creada!',
+        `"${creada.Titulo}" se guardó correctamente y ya está activa para tus clientes.`,
         [
           {
-            text: 'Aceptar',
-            onPress: () => navigation.goBack(),
+            text: 'Ver mis promociones',
+            onPress: () => router.replace('/negocio/promociones'),
+          },
+          {
+            text: 'Cerrar',
+            onPress: () => navigation.goBack?.() ?? router.back(),
           },
         ]
       );
     } catch (e) {
-      Alert.alert('Error', e.message ?? 'No se pudo crear la promoción.');
+      console.error('[CrearPromocion] guardar:', e);
+      Alert.alert('No se guardó', e.message ?? 'No se pudo crear la promoción en Supabase.');
     } finally {
       setGuardando(false);
     }

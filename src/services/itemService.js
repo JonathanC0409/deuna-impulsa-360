@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { calcularEstadoStock } from '../utils/estadoInventario';
+import { generarAlertaStockSiAplica } from './alertaService';
 
 const TABLE = 'ItemsNegocio';
 const TABLE_NEGOCIOS = 'Negocios';
@@ -94,6 +95,12 @@ export async function crearItemNegocio(item) {
     throw new Error(error.message ?? 'No se pudo crear el ítem.');
   }
 
+  try {
+    await generarAlertaStockSiAplica(data);
+  } catch (e) {
+    console.warn('[crearItemNegocio] alerta stock:', e?.message);
+  }
+
   return data;
 }
 
@@ -172,6 +179,12 @@ export async function actualizarItemNegocio(idItemNegocio, data, idNegocio = nul
 
   if (!updated) {
     throw new Error('No se encontró el ítem o no tienes permiso para editarlo.');
+  }
+
+  try {
+    await generarAlertaStockSiAplica(updated);
+  } catch (e) {
+    console.warn('[actualizarItemNegocio] alerta stock:', e?.message);
   }
 
   return updated;

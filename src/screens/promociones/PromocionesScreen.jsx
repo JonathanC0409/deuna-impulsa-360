@@ -222,7 +222,7 @@ export default function PromocionesScreen() {
         <ScreenContainer>
           <View style={styles.header}>
             <Pressable
-              onPress={() => router.push('/beneficios')}
+              onPress={() => router.push('/cliente/beneficios')}
               style={({ pressed }) => [
                 styles.backButton,
                 pressed && styles.backButtonPressed,
@@ -344,7 +344,7 @@ export default function PromocionesScreen() {
           <DeunaButton
             title="Volver a beneficios"
             variant="outline"
-            onPress={() => router.push('/beneficios')}
+            onPress={() => router.push('/cliente/beneficios')}
             style={styles.footerBtn}
           />
         </ScreenContainer>

@@ -5,6 +5,8 @@ import { createExpoNavigationShim } from '../../src/navigation/expoNavigationShi
 const ROUTES = {
   CrearItem: '/negocio/crear-item',
   EditarItem: '/negocio/editar-item',
+  CrearPromocion: '/CrearPromocion',
+  DashboardNegocio: '/negocio',
 };
 
 export default function ItemsNegocioPage() {
