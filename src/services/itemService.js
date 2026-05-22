@@ -49,15 +49,38 @@ export async function crearItemNegocio(item) {
     payload.Estado = calcularEstadoStock(payload.Stock ?? 0, payload.StockMinimo ?? 0);
   }
 
+  // Asegurar FechaCreacion para cumplir con restricciones NOT NULL en la tabla
+  if (!payload.FechaCreacion) {
+    payload.FechaCreacion = new Date().toISOString();
+  }
+
   const { data, error } = await supabase.from(TABLE).insert(payload).select().single();
   if (error) throw error;
   return data;
 }
 
 export async function actualizarItemNegocio(idItemNegocio, data) {
+  const payload = { ...data };
+
   const { data: updated, error } = await supabase
     .from(TABLE)
-    .update(data)
+    .update(payload)
+    .eq('IdItemNegocio', idItemNegocio)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return updated;
+}
+
+export async function eliminarItemNegocio(idItemNegocio) {
+  const payload = {
+    Activo: false,
+  };
+
+  const { data: updated, error } = await supabase
+    .from(TABLE)
+    .update(payload)
     .eq('IdItemNegocio', idItemNegocio)
     .select()
     .single();

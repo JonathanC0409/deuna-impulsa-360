@@ -18,6 +18,7 @@ export function AuthProvider({ children }) {
   };
 
   const restaurarSesion = useCallback(async () => {
+    console.log('[AuthContext] restaurarSesion: start');
     try {
       const raw = await getItem(SESSION_KEY);
       if (!raw) return;
@@ -30,9 +31,17 @@ export function AuthProvider({ children }) {
         const giro = await obtenerGiroBienvenidaPendiente(parsed.usuario.IdUsuario);
         setGiroBienvenida(giro);
       }
+      console.log('[AuthContext] restaurarSesion: success', {
+        usuario: parsed.usuario?.Correo,
+        rol: parsed.usuario?.Rol,
+      });
     } catch (e) {
-      console.warn('Restaurar sesión:', e);
-      await removeItem(SESSION_KEY);
+      console.error('[AuthContext] restaurarSesion: error', e?.message ?? e, e);
+      try {
+        await removeItem(SESSION_KEY);
+      } catch (remErr) {
+        console.error('[AuthContext] restaurarSesion: removeItem error', remErr);
+      }
     } finally {
       setCargando(false);
     }
@@ -43,17 +52,24 @@ export function AuthProvider({ children }) {
   }, [restaurarSesion]);
 
   const signIn = useCallback(async ({ correo, rolEsperado }) => {
-    const { usuario: user, negocio: neg, giroBienvenida: giro } = await iniciarSesion({
-      correo,
-      rolEsperado,
-    });
+    console.log('[AuthContext] signIn: start', { correo, rolEsperado });
+    try {
+      const { usuario: user, negocio: neg, giroBienvenida: giro } = await iniciarSesion({
+        correo,
+        rolEsperado,
+      });
 
-    setUsuario(user);
-    setNegocio(neg);
-    setGiroBienvenida(giro);
-    await persistir({ usuario: user, negocio: neg });
+      setUsuario(user);
+      setNegocio(neg);
+      setGiroBienvenida(giro);
+      await persistir({ usuario: user, negocio: neg });
 
-    return { usuario: user, negocio: neg, giroBienvenida: giro };
+      console.log('[AuthContext] signIn: success', { correo: user?.Correo, rol: user?.Rol });
+      return { usuario: user, negocio: neg, giroBienvenida: giro };
+    } catch (err) {
+      console.error('[AuthContext] signIn: error', err?.message ?? err, err);
+      throw err;
+    }
   }, []);
 
   const signInDirecto = useCallback(async ({ usuario: user, negocio: neg = null, giro = null }) => {

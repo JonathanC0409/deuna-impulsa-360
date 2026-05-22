@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,19 +7,22 @@ import {
   ScrollView,
   Switch,
   Alert,
-  Pressable,
 } from 'react-native';
+import { Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
-import { crearItemNegocio } from '../../services/itemService';
+import { obtenerItemPorId, actualizarItemNegocio } from '../../services/itemService';
 
 const TIPOS_ITEM = ['Producto', 'Servicio', 'Combo', 'Paquete'];
 
-export default function CrearItemScreen({ navigation }) {
+export default function EditarItemScreen({ navigation, route }) {
   const { idNegocio } = useAuth();
+  const itemParam = route?.params?.item ?? null;
+  const itemId = itemParam?.IdItemNegocio ?? route?.params?.idItemNegocio ?? null;
+
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipoItem, setTipoItem] = useState('Producto');
@@ -28,6 +31,39 @@ export default function CrearItemScreen({ navigation }) {
   const [stock, setStock] = useState('');
   const [stockMinimo, setStockMinimo] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (itemParam) {
+          const it = itemParam;
+          if (!mounted) return;
+          setNombre(it.Nombre ?? '');
+          setDescripcion(it.Descripcion ?? '');
+          setTipoItem(it.TipoItem ?? 'Producto');
+          setPrecio(String(it.Precio ?? ''));
+          setManejaStock(Boolean(it.ManejaStock));
+          setStock(String(it.Stock ?? ''));
+          setStockMinimo(String(it.StockMinimo ?? ''));
+        } else if (itemId) {
+          const it = await obtenerItemPorId(itemId);
+          if (!mounted) return;
+          setNombre(it.Nombre ?? '');
+          setDescripcion(it.Descripcion ?? '');
+          setTipoItem(it.TipoItem ?? 'Producto');
+          setPrecio(String(it.Precio ?? ''));
+          setManejaStock(Boolean(it.ManejaStock));
+          setStock(String(it.Stock ?? ''));
+          setStockMinimo(String(it.StockMinimo ?? ''));
+        }
+      } catch (e) {
+        console.error('[EditarItemScreen] load item error', e);
+        Alert.alert('Error', e.message ?? String(e));
+      }
+    })();
+    return () => { mounted = false; };
+  }, [itemParam, itemId]);
 
   const handleGuardar = async () => {
     if (!nombre.trim() || !precio.trim()) {
@@ -42,21 +78,7 @@ export default function CrearItemScreen({ navigation }) {
 
     setLoading(true);
     try {
-        const payload = {
-          IdNegocio: idNegocio,
-          Nombre: nombre.trim(),
-          Descripcion: descripcion.trim() || null,
-          TipoItem: tipoItem,
-          Precio: parseFloat(precio),
-          ManejaStock: manejaStock,
-          Stock: manejaStock ? parseInt(stock, 10) || 0 : null,
-          StockMinimo: manejaStock ? parseInt(stockMinimo, 10) || 0 : null,
-        };
-
-        console.log('[CrearItemScreen] payload:', payload);
-
-      await crearItemNegocio({
-        IdNegocio: idNegocio,
+      const payload = {
         Nombre: nombre.trim(),
         Descripcion: descripcion.trim() || null,
         TipoItem: tipoItem,
@@ -64,17 +86,16 @@ export default function CrearItemScreen({ navigation }) {
         ManejaStock: manejaStock,
         Stock: manejaStock ? parseInt(stock, 10) || 0 : null,
         StockMinimo: manejaStock ? parseInt(stockMinimo, 10) || 0 : null,
-      });
-      Alert.alert('Ítem creado', 'Se guardó correctamente en Supabase.', [
-        { text: 'OK', onPress: () => {
-          if (navigation.replace) navigation.replace('ItemsNegocio');
-          else navigation.goBack();
-        } },
+        FechaActualizacion: new Date().toISOString(),
+      };
+      console.log('[EditarItemScreen] payload:', payload);
+      await actualizarItemNegocio(itemId, payload);
+      Alert.alert('Ítem actualizado', 'Se actualizó correctamente.', [
+        { text: 'OK', onPress: () => { if (navigation.replace) navigation.replace('ItemsNegocio'); else navigation.goBack(); } },
       ]);
     } catch (e) {
-        console.error('[CrearItemScreen] crearItem error:', e);
-        const message = e?.message || JSON.stringify(e);
-        Alert.alert('Error', message);
+      console.error('[EditarItemScreen] update error', e);
+      Alert.alert('Error', e.message ?? String(e));
     } finally {
       setLoading(false);
     }
@@ -144,14 +165,11 @@ export default function CrearItemScreen({ navigation }) {
                 onChangeText={setStockMinimo}
                 keyboardType="number-pad"
               />
-              <Text style={styles.hint}>
-                El Estado se calcula automáticamente al guardar (Disponible, Bajo, Crítico o Agotado).
-              </Text>
             </>
           )}
         </DeunaCard>
 
-        <DeunaButton title="Guardar ítem" onPress={handleGuardar} loading={loading} />
+        <DeunaButton title="Guardar cambios" onPress={handleGuardar} loading={loading} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -191,5 +209,4 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.text },
   chipTextActive: { color: colors.white, fontWeight: '600' },
-  hint: { fontSize: 12, color: colors.textMuted, marginTop: 10, lineHeight: 18 },
 });

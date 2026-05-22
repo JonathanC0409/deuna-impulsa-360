@@ -17,6 +17,22 @@ export async function iniciarSesion({ correo, rolEsperado }) {
 
   let usuario = await buscarUsuarioPorCorreo(email);
 
+  // Si el usuario ya existe, validar que su rol coincida con el rol esperado
+  if (usuario) {
+    const rolUsuario = String(usuario.Rol ?? '').trim().toLowerCase();
+    const esperado = String(rolEsperado ?? '').trim().toLowerCase();
+
+    if (esperado === 'negocio') {
+      if (!(rolUsuario === 'negocio' || rolUsuario === 'propietario')) {
+        throw new Error('No existe una cuenta de negocio con este correo.');
+      }
+    } else if (esperado === 'cliente') {
+      if (rolUsuario !== 'cliente') {
+        throw new Error('No existe una cuenta de cliente con este correo.');
+      }
+    }
+  }
+
   if (!usuario) {
     const nombreBase = email.split('@')[0].replace(/[._-]/g, ' ') || 'Usuario';
     const nombre = nombreBase.charAt(0).toUpperCase() + nombreBase.slice(1);

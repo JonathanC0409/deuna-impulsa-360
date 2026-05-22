@@ -1,16 +1,16 @@
 import { useRouter } from 'expo-router';
-import CrearItemScreen from '../../src/screens/negocio/CrearItemScreen';
+import EditarItemScreen from '../../src/screens/negocio/EditarItemScreen';
 import { createExpoNavigationShim } from '../../src/navigation/expoNavigationShim';
 
 const ROUTES = {
   ItemsNegocio: '/negocio/items-negocio',
 };
 
-export default function CrearItemPage() {
+export default function EditarItemPage() {
   const router = useRouter();
-  const baseNav = createExpoNavigationShim(router, ROUTES);
-  const navigation = {
-    ...baseNav,
+  const navigation = createExpoNavigationShim(router, ROUTES);
+  const wrapped = {
+    ...navigation,
     replace: (name, params) => {
       const path = ROUTES[name];
       if (path) router.replace({ pathname: path, params });
@@ -19,5 +19,5 @@ export default function CrearItemPage() {
     goBack: () => router.back(),
   };
 
-  return <CrearItemScreen navigation={navigation} />;
+  return <EditarItemScreen navigation={wrapped} />;
 }

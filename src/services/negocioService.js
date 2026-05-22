@@ -26,11 +26,14 @@ export async function obtenerNegocio(idNegocio) {
 }
 
 export async function obtenerNegocioPorPropietario(idUsuarioPropietario) {
+  // Limit to 1 result to avoid errors when multiple negocios exist for the same propietario
   const { data, error } = await supabase
     .from(TABLE_NEGOCIOS)
     .select('*')
     .eq('IdUsuarioPropietario', idUsuarioPropietario)
     .eq('Activo', true)
+    .order('IdNegocio', { ascending: true })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;

@@ -95,6 +95,7 @@ export async function crearGiro({
       IdVenta: idVenta,
       IdCliente: idCliente,
       IdPromocion: idPromocion,
+      FechaGenerado: new Date().toISOString(),
       TipoGiro: tipoGiro,
       MontoCompra: montoCompra,
       Nivel: nivelGiro,

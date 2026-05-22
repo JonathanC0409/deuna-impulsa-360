@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Text,
   TextInput,
@@ -15,7 +15,7 @@ import { colors, spacing, radii, typography } from '../../theme';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginScreen({ navigation, rol = 'Cliente' }) {
-  const { signIn } = useAuth();
+  const { signIn, usuario, signOut } = useAuth();
   const [correo, setCorreo] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -34,6 +34,9 @@ export default function LoginScreen({ navigation, rol = 'Cliente' }) {
         rolEsperado: rol,
       });
 
+      console.log('[LoginScreen] signIn result giro:', giro);
+      Alert.alert('Éxito', 'Inicio de sesión completado.');
+
       if (!esNegocio && giro) {
         navigation.replace('GiroBienvenida');
         return;
@@ -46,6 +49,14 @@ export default function LoginScreen({ navigation, rol = 'Cliente' }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Si hay una sesión activa, la limpiamos para forzar ingreso por correo
+    if (usuario) {
+      signOut();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe}>

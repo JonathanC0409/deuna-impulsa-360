@@ -82,6 +82,7 @@ export default function RuletaScreen({ navigation, route }) {
     const errorParams = validarParams(params);
     if (errorParams) {
       mostrarError('Datos incompletos', errorParams);
+      setCargando(false);
       return;
     }
 

@@ -53,7 +53,11 @@ export default function GiroBienvenidaScreen({ navigation }) {
       }
     }
 
-    if (usuario?.IdUsuario) cargar();
+    if (usuario?.IdUsuario) {
+      cargar();
+    } else {
+      if (activo) setCargando(false);
+    }
     return () => {
       activo = false;
     };

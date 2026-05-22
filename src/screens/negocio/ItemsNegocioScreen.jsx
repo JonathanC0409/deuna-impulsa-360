@@ -14,6 +14,8 @@ import { colors } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
 import { obtenerItemsNegocio } from '../../services/itemService';
 import EstadoItemBadge from './components/EstadoItemBadge';
+import { eliminarItemNegocio } from '../../services/itemService';
+import { Alert, Pressable } from 'react-native';
 
 export default function ItemsNegocioScreen({ navigation }) {
   const { idNegocio } = useAuth();
@@ -78,6 +80,36 @@ export default function ItemsNegocioScreen({ navigation }) {
                   <Text style={styles.stock}>Sin control de stock</Text>
                 )}
               </View>
+              <View style={styles.actionsRow}>
+                <Pressable onPress={() => navigation.navigate('EditarItem', { item })} style={styles.actionBtn}>
+                  <Text style={styles.actionText}>Editar</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    Alert.alert('Eliminar ítem', '¿Estás seguro de eliminar este ítem?', [
+                      { text: 'Cancelar', style: 'cancel' },
+                      {
+                        text: 'Eliminar',
+                        style: 'destructive',
+                        onPress: async () => {
+                          try {
+                            await eliminarItemNegocio(item.IdItemNegocio);
+                            // refrescar lista en lugar de navegar
+                            setLoading(true);
+                            await cargar();
+                          } catch (e) {
+                            console.error('[ItemsNegocioScreen] eliminar error', e);
+                            Alert.alert('Error', e.message ?? String(e));
+                          }
+                        },
+                      },
+                    ]);
+                  }}
+                  style={[styles.actionBtn, styles.deleteBtn]}
+                >
+                  <Text style={[styles.actionText, styles.deleteText]}>Eliminar</Text>
+                </Pressable>
+              </View>
             </DeunaCard>
           )}
         />
@@ -108,4 +140,9 @@ const styles = StyleSheet.create({
   precio: { fontSize: 16, fontWeight: '700', color: colors.cashback },
   stock: { fontSize: 14, color: colors.text },
   empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40 },
+  actionsRow: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 12 },
+  actionBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: colors.surface },
+  actionText: { color: colors.primary, fontWeight: '700' },
+  deleteBtn: { backgroundColor: 'transparent' },
+  deleteText: { color: colors.danger },
 });
