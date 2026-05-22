@@ -1,3 +1,4 @@
+import { Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -19,6 +20,7 @@ import RuletaScreen from '../screens/ruleta/RuletaScreen';
 import ResultadoRecompensaScreen from '../screens/ruleta/ResultadoRecompensaScreen';
 
 import PromocionesScreen from '../screens/promociones/PromocionesScreen';
+import FlujoImpulsaScreen from '../screens/promociones/FlujoImpulsaScreen';
 
 const RootStack = createNativeStackNavigator();
 const ClienteStack = createNativeStackNavigator();
@@ -30,7 +32,10 @@ const headerOptions = {
   headerStyle: { backgroundColor: colors.primary },
   headerTintColor: colors.white,
   headerTitleStyle: { fontWeight: '700' },
+  headerBackTitleVisible: false,
 };
+
+const tabIcon = (emoji) => () => <Text style={{ fontSize: 20 }}>{emoji}</Text>;
 
 function ClienteTabs() {
   return (
@@ -50,22 +55,22 @@ function ClienteTabs() {
       <Tab.Screen
         name="Inicio"
         component={InicioClienteScreen}
-        options={{ title: 'Inicio', tabBarLabel: 'Inicio' }}
+        options={{ title: 'Inicio', tabBarLabel: 'Inicio', tabBarIcon: tabIcon('🏠') }}
       />
       <Tab.Screen
         name="Beneficios"
         component={BeneficiosScreen}
-        options={{ title: 'Beneficios' }}
+        options={{ title: 'Beneficios', tabBarIcon: tabIcon('🎁') }}
       />
       <Tab.Screen
         name="Billetera"
         component={BilleteraScreen}
-        options={{ title: 'Billetera' }}
+        options={{ title: 'Billetera', tabBarIcon: tabIcon('💳') }}
       />
       <Tab.Screen
         name="Tu"
         component={PerfilClienteScreen}
-        options={{ title: 'Tú', tabBarLabel: 'Tú' }}
+        options={{ title: 'Tú', tabBarLabel: 'Tú', tabBarIcon: tabIcon('👤') }}
       />
     </Tab.Navigator>
   );
@@ -156,6 +161,11 @@ export default function AppNavigator() {
           name="Promociones"
           component={PromocionesScreen}
           options={{ title: 'Promociones' }}
+        />
+        <RootStack.Screen
+          name="FlujoImpulsa"
+          component={FlujoImpulsaScreen}
+          options={{ title: 'Flujo Impulsa 360' }}
         />
       </RootStack.Navigator>
     </NavigationContainer>
