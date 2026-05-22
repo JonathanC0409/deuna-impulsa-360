@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import MetricCard from '../../components/MetricCard';
+import ModuloQuickNav from '../../components/ModuloQuickNav';
 import { colors } from '../../theme/colors';
 import { MOCK_USUARIO } from '../../data/mockData';
 
@@ -33,6 +34,20 @@ export default function InicioClienteScreen({ navigation }) {
           </Text>
         </DeunaCard>
 
+        <ModuloQuickNav navigation={navigation} active="Cliente" />
+
+        <DeunaButton
+          title="Conocer el flujo 360"
+          variant="outline"
+          onPress={() => navigation.navigate('FlujoImpulsa')}
+          style={styles.gap}
+        />
+        <DeunaButton
+          title="Mis recompensas"
+          variant="outline"
+          onPress={() => navigation.navigate('MisRecompensas')}
+          style={styles.gap}
+        />
         <DeunaButton
           title="Simular pago exitoso"
           onPress={() => navigation.navigate('PagoExitoso', { puntos: 120 })}

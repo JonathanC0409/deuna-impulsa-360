@@ -1,56 +1,56 @@
-# Welcome to your Expo app 👋
+# Deuna Impulsa 360
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+MVP móvil (React Native + Expo) que conecta **pagos Deuna**, **promociones**, **ruleta**, **recompensas** y **panel del negocio** para impulsar ventas y fidelización en MIPYMES.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Inicio rápido
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Abre en Expo Go, emulador Android/iOS o build de desarrollo.
 
-### Other setup steps
+## Módulos
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+| Módulo | Ruta principal | Descripción |
+|--------|----------------|-------------|
+| Cliente | `src/screens/cliente/` | Inicio, beneficios, billetera, perfil, pago exitoso |
+| Negocio | `src/screens/negocio/` | Dashboard, ítems, registrar venta |
+| Ruleta | `src/screens/ruleta/` | Giro y resultado de recompensa |
+| Promociones | `src/screens/promociones/` | Promos activas, inteligentes y dinámicas |
+| Flujo 360 | `FlujoImpulsaScreen` | Presentación del ciclo completo del producto |
 
-## Learn more
+Navegación central: `src/navigation/AppNavigator.jsx`.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Promociones (demo)
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Incluye datos mock en `src/data/mockData.js`:
 
-## Join the community
+- Giro premium en Tienda Don Luis
+- 10% descuento en empanadas
+- Cashback en horario promocional
+- Promo por horario bajo
+- Promo por stock bajo
 
-Join our community of developers creating universal apps.
+## Pitch y documentación
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Documento completo del MVP (problema, solución, Hooked, ISO):
+
+**[documentacion/pitch.md](./documentacion/pitch.md)**
+
+## Stack
+
+- React Native · Expo SDK 56
+- React Navigation (stack + tabs)
+- Supabase (tablas ya definidas en backend; pantallas usan mock donde aplica)
+
+## Convenciones del equipo
+
+- No modificar `App.js`, `src/config/supabase.js` ni `package.json` sin coordinación.
+- Servicios por módulo en `src/services/`.
+- Paleta Deuna: `src/theme/colors.js` (morado `#4B168C`, cashback `#00C896`).
+
+## Rama de trabajo
+
+`feature/dashboard-promociones` — promociones, flujo 360, navegación y documentación del MVP.
