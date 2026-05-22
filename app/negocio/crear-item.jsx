@@ -13,7 +13,7 @@ export default function CrearItemPage() {
     ...baseNav,
     replace: (name, params) => {
       const path = ROUTES[name];
-      if (path) router.replace({ pathname: path, params });
+      if (path) router.replace({ pathname: path, params: { refresh: String(Date.now()), ...params } });
       else router.replace(name);
     },
     goBack: () => router.back(),

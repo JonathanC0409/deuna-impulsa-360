@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import ItemsNegocioScreen from '../../src/screens/negocio/ItemsNegocioScreen';
 import { createExpoNavigationShim } from '../../src/navigation/expoNavigationShim';
 
@@ -9,6 +9,13 @@ const ROUTES = {
 
 export default function ItemsNegocioPage() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const navigation = createExpoNavigationShim(router, ROUTES);
-  return <ItemsNegocioScreen navigation={navigation} />;
+
+  return (
+    <ItemsNegocioScreen
+      navigation={navigation}
+      refreshKey={params.refresh}
+    />
+  );
 }

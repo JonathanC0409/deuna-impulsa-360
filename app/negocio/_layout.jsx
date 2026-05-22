@@ -13,6 +13,7 @@ export default function NegocioLayout() {
       <Stack.Screen name="index" options={{ title: 'Mi negocio' }} />
       <Stack.Screen name="items-negocio" options={{ title: 'Inventario' }} />
       <Stack.Screen name="crear-item" options={{ title: 'Crear ítem' }} />
+      <Stack.Screen name="editar-item" options={{ title: 'Editar ítem' }} />
       <Stack.Screen name="registrar-venta" options={{ title: 'Registrar venta' }} />
     </Stack>
   );

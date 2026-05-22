@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,21 +7,33 @@ import {
   ScrollView,
   Switch,
   Alert,
+  Pressable,
+  ActivityIndicator,
 } from 'react-native';
-import { Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
-import { obtenerItemPorId, actualizarItemNegocio } from '../../services/itemService';
+import { obtenerItemNegocio, actualizarItemNegocio } from '../../services/itemService';
 
 const TIPOS_ITEM = ['Producto', 'Servicio', 'Combo', 'Paquete'];
 
+function aplicarItemEnFormulario(it, setters) {
+  setters.setNombre(it.Nombre ?? '');
+  setters.setDescripcion(it.Descripcion ?? '');
+  setters.setTipoItem(it.TipoItem ?? 'Producto');
+  setters.setPrecio(String(it.Precio ?? ''));
+  setters.setManejaStock(Boolean(it.ManejaStock));
+  setters.setStock(it.ManejaStock ? String(it.Stock ?? 0) : '');
+  setters.setStockMinimo(it.ManejaStock ? String(it.StockMinimo ?? 0) : '');
+}
+
 export default function EditarItemScreen({ navigation, route }) {
   const { idNegocio } = useAuth();
-  const itemParam = route?.params?.item ?? null;
-  const itemId = itemParam?.IdItemNegocio ?? route?.params?.idItemNegocio ?? null;
+  const itemId = route?.params?.idItemNegocio
+    ? Number(route.params.idItemNegocio)
+    : null;
 
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -30,40 +42,64 @@ export default function EditarItemScreen({ navigation, route }) {
   const [manejaStock, setManejaStock] = useState(true);
   const [stock, setStock] = useState('');
   const [stockMinimo, setStockMinimo] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [cargandoItem, setCargandoItem] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+
+  const setters = {
+    setNombre,
+    setDescripcion,
+    setTipoItem,
+    setPrecio,
+    setManejaStock,
+    setStock,
+    setStockMinimo,
+  };
+
+  const volverInventario = useCallback(() => {
+    if (navigation.replace) {
+      navigation.replace('ItemsNegocio');
+    } else {
+      navigation.goBack();
+    }
+  }, [navigation]);
 
   useEffect(() => {
     let mounted = true;
+
     (async () => {
-      try {
-        if (itemParam) {
-          const it = itemParam;
-          if (!mounted) return;
-          setNombre(it.Nombre ?? '');
-          setDescripcion(it.Descripcion ?? '');
-          setTipoItem(it.TipoItem ?? 'Producto');
-          setPrecio(String(it.Precio ?? ''));
-          setManejaStock(Boolean(it.ManejaStock));
-          setStock(String(it.Stock ?? ''));
-          setStockMinimo(String(it.StockMinimo ?? ''));
-        } else if (itemId) {
-          const it = await obtenerItemPorId(itemId);
-          if (!mounted) return;
-          setNombre(it.Nombre ?? '');
-          setDescripcion(it.Descripcion ?? '');
-          setTipoItem(it.TipoItem ?? 'Producto');
-          setPrecio(String(it.Precio ?? ''));
-          setManejaStock(Boolean(it.ManejaStock));
-          setStock(String(it.Stock ?? ''));
-          setStockMinimo(String(it.StockMinimo ?? ''));
+      if (!itemId || !idNegocio) {
+        if (mounted) {
+          setCargandoItem(false);
+          Alert.alert(
+            'Ítem no encontrado',
+            'No se recibió el identificador del ítem. Vuelve al inventario e intenta de nuevo.',
+            [{ text: 'OK', onPress: volverInventario }]
+          );
         }
+        return;
+      }
+
+      try {
+        setCargandoItem(true);
+        const it = await obtenerItemNegocio(itemId, idNegocio);
+        if (!mounted) return;
+        aplicarItemEnFormulario(it, setters);
       } catch (e) {
         console.error('[EditarItemScreen] load item error', e);
-        Alert.alert('Error', e.message ?? String(e));
+        if (mounted) {
+          Alert.alert('Error', e.message ?? 'No se pudo cargar el ítem.', [
+            { text: 'Volver', onPress: volverInventario },
+          ]);
+        }
+      } finally {
+        if (mounted) setCargandoItem(false);
       }
     })();
-    return () => { mounted = false; };
-  }, [itemParam, itemId]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [itemId, idNegocio]);
 
   const handleGuardar = async () => {
     if (!nombre.trim() || !precio.trim()) {
@@ -71,42 +107,70 @@ export default function EditarItemScreen({ navigation, route }) {
       return;
     }
 
-    if (!idNegocio) {
-      Alert.alert('Sesión', 'No hay negocio vinculado.');
+    const precioNum = parseFloat(precio.replace(',', '.'));
+    if (Number.isNaN(precioNum) || precioNum < 0) {
+      Alert.alert('Precio inválido', 'Ingresa un precio numérico válido.');
       return;
     }
 
-    setLoading(true);
+    if (!idNegocio || !itemId) {
+      Alert.alert('Sesión', 'No hay negocio o ítem vinculado.');
+      return;
+    }
+
+    if (manejaStock) {
+      const stockNum = parseInt(stock, 10);
+      const minNum = parseInt(stockMinimo, 10);
+      if (Number.isNaN(stockNum) || stockNum < 0 || Number.isNaN(minNum) || minNum < 0) {
+        Alert.alert('Stock inválido', 'Stock y stock mínimo deben ser números enteros ≥ 0.');
+        return;
+      }
+    }
+
+    setGuardando(true);
     try {
       const payload = {
         Nombre: nombre.trim(),
         Descripcion: descripcion.trim() || null,
         TipoItem: tipoItem,
-        Precio: parseFloat(precio),
+        Precio: precioNum,
         ManejaStock: manejaStock,
         Stock: manejaStock ? parseInt(stock, 10) || 0 : null,
         StockMinimo: manejaStock ? parseInt(stockMinimo, 10) || 0 : null,
-        FechaActualizacion: new Date().toISOString(),
       };
-      console.log('[EditarItemScreen] payload:', payload);
-      await actualizarItemNegocio(itemId, payload);
-      Alert.alert('Ítem actualizado', 'Se actualizó correctamente.', [
-        { text: 'OK', onPress: () => { if (navigation.replace) navigation.replace('ItemsNegocio'); else navigation.goBack(); } },
+
+      await actualizarItemNegocio(itemId, payload, idNegocio);
+      Alert.alert('Ítem actualizado', 'Los cambios se guardaron correctamente.', [
+        { text: 'OK', onPress: volverInventario },
       ]);
     } catch (e) {
       console.error('[EditarItemScreen] update error', e);
-      Alert.alert('Error', e.message ?? String(e));
+      Alert.alert('Error', e.message ?? 'No se pudo actualizar el ítem.');
     } finally {
-      setLoading(false);
+      setGuardando(false);
     }
   };
+
+  if (cargandoItem) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>Cargando ítem...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <DeunaCard>
           <Text style={styles.label}>Nombre *</Text>
-          <TextInput style={styles.input} value={nombre} onChangeText={setNombre} placeholder="Ej. Pizza familiar" />
+          <TextInput
+            style={styles.input}
+            value={nombre}
+            onChangeText={setNombre}
+            placeholder="Ej. Pizza familiar"
+          />
 
           <Text style={[styles.label, styles.spaced]}>Descripción</Text>
           <TextInput
@@ -149,7 +213,7 @@ export default function EditarItemScreen({ navigation, route }) {
             />
           </View>
 
-          {manejaStock && (
+          {manejaStock ? (
             <>
               <Text style={[styles.label, styles.spaced]}>Stock</Text>
               <TextInput
@@ -165,11 +229,20 @@ export default function EditarItemScreen({ navigation, route }) {
                 onChangeText={setStockMinimo}
                 keyboardType="number-pad"
               />
+              <Text style={styles.hint}>
+                El estado (Disponible, Bajo, Crítico, Agotado) se actualiza al guardar.
+              </Text>
             </>
-          )}
+          ) : null}
         </DeunaCard>
 
-        <DeunaButton title="Guardar cambios" onPress={handleGuardar} loading={loading} />
+        <DeunaButton title="Guardar cambios" onPress={handleGuardar} loading={guardando} />
+        <DeunaButton
+          title="Cancelar"
+          variant="outline"
+          onPress={volverInventario}
+          style={styles.cancelBtn}
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -177,6 +250,14 @@ export default function EditarItemScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    gap: 12,
+  },
+  loadingText: { color: colors.textMuted, fontSize: 14 },
   content: { padding: 20, paddingBottom: 32 },
   label: { fontSize: 13, fontWeight: '600', color: colors.textMuted },
   input: {
@@ -209,4 +290,6 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 13, color: colors.text },
   chipTextActive: { color: colors.white, fontWeight: '600' },
+  hint: { fontSize: 12, color: colors.textMuted, marginTop: 10, lineHeight: 18 },
+  cancelBtn: { marginTop: 12 },
 });

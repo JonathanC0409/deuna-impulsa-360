@@ -59,32 +59,60 @@ export async function crearItemNegocio(item) {
   return data;
 }
 
-export async function actualizarItemNegocio(idItemNegocio, data) {
-  const payload = { ...data };
+function aplicarEstadoEnPayload(payload) {
+  if (payload.ManejaStock === false) {
+    payload.Stock = null;
+    payload.StockMinimo = null;
+    payload.Estado = 'Disponible';
+  } else if (
+    payload.ManejaStock === true ||
+    payload.Stock != null ||
+    payload.StockMinimo != null
+  ) {
+    payload.Estado = calcularEstadoStock(payload.Stock ?? 0, payload.StockMinimo ?? 0);
+  }
+  return payload;
+}
 
-  const { data: updated, error } = await supabase
+export async function obtenerItemNegocio(idItemNegocio, idNegocio) {
+  const { data, error } = await supabase
     .from(TABLE)
-    .update(payload)
+    .select('*')
     .eq('IdItemNegocio', idItemNegocio)
-    .select()
+    .eq('IdNegocio', idNegocio)
+    .eq('Activo', true)
     .single();
 
   if (error) throw error;
+  return data;
+}
+
+export async function actualizarItemNegocio(idItemNegocio, data, idNegocio = null) {
+  const payload = aplicarEstadoEnPayload({ ...data });
+
+  let query = supabase.from(TABLE).update(payload).eq('IdItemNegocio', idItemNegocio);
+  if (idNegocio != null) {
+    query = query.eq('IdNegocio', idNegocio);
+  }
+
+  const { data: updated, error } = await query.select().single();
+
+  if (error) throw error;
+  if (!updated) throw new Error('No se encontró el ítem o no tienes permiso para editarlo.');
   return updated;
 }
 
-export async function eliminarItemNegocio(idItemNegocio) {
-  const payload = {
-    Activo: false,
-  };
+export async function eliminarItemNegocio(idItemNegocio, idNegocio = null) {
+  const payload = { Activo: false };
 
-  const { data: updated, error } = await supabase
-    .from(TABLE)
-    .update(payload)
-    .eq('IdItemNegocio', idItemNegocio)
-    .select()
-    .single();
+  let query = supabase.from(TABLE).update(payload).eq('IdItemNegocio', idItemNegocio);
+  if (idNegocio != null) {
+    query = query.eq('IdNegocio', idNegocio);
+  }
+
+  const { data: updated, error } = await query.select().single();
 
   if (error) throw error;
+  if (!updated) throw new Error('No se pudo eliminar el ítem.');
   return updated;
 }
