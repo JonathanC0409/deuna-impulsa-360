@@ -1,69 +1,139 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DeunaCard from '../../components/DeunaCard';
-import MetricCard from '../../components/MetricCard';
-import { colors } from '../../theme/colors';
-import { MOCK_USUARIO } from '../../data/mockData';
+import { Ionicons } from '@expo/vector-icons';
+import SaldoCard from '../../components/cliente/SaldoCard';
+import CashbackCard from '../../components/cliente/CashbackCard';
+import { colors, spacing } from '../../components/cliente/clienteTheme';
+import { MOCK_CLIENTE, MOCK_HISTORIAL } from '../../components/cliente/mockClienteData';
 
-const MOVIMIENTOS = [
-  { id: 1, desc: 'Compra Café Andino', puntos: '+80', fecha: '20 May' },
-  { id: 2, desc: 'Cashback acreditado', puntos: '+$3.20', fecha: '18 May' },
-  { id: 3, desc: 'Canje recompensa', puntos: '-200', fecha: '15 May' },
-];
+function HistorialItem({ item }) {
+  const esIngreso = item.monto > 0;
+  const icon =
+    item.tipo === 'cashback'
+      ? 'sparkles'
+      : item.tipo === 'recarga'
+        ? 'add-circle-outline'
+        : 'cart-outline';
+
+  return (
+    <View style={styles.movRow}>
+      <View style={styles.movIcon}>
+        <Ionicons name={icon} size={20} color={colors.primary} />
+      </View>
+      <View style={styles.movBody}>
+        <Text style={styles.movDesc}>{item.desc}</Text>
+        <Text style={styles.movFecha}>{item.fecha}</Text>
+      </View>
+      <Text style={[styles.movMonto, esIngreso ? styles.montoPos : styles.montoNeg]}>
+        {esIngreso ? '+' : ''}${Math.abs(item.monto).toFixed(2)}
+      </Text>
+    </View>
+  );
+}
 
 export default function BilleteraScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.metrics}>
-          <MetricCard label="Puntos" value={String(MOCK_USUARIO.puntos)} accent={colors.primary} />
-          <MetricCard
-            label="Cashback"
-            value={`$${MOCK_USUARIO.cashback}`}
-            accent={colors.cashback}
-            subtitle="Disponible"
-          />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.cuentaHeader}>
+          <Ionicons name="logo-usd" size={20} color={colors.primary} />
+          <Text style={styles.cuentaTitulo}>Cuenta Deuna</Text>
         </View>
 
-        <DeunaCard>
-          <Text style={styles.saldoLabel}>Saldo estimado</Text>
-          <Text style={styles.saldo}>${(MOCK_USUARIO.cashback + 5).toFixed(2)}</Text>
-        </DeunaCard>
+        <SaldoCard saldo={MOCK_CLIENTE.saldoDisponible} style={styles.block} />
+        <CashbackCard monto={MOCK_CLIENTE.cashbackAcumulado} compact style={styles.block} />
 
-        <Text style={styles.section}>Movimientos recientes</Text>
-        {MOVIMIENTOS.map((m) => (
-          <DeunaCard key={m.id} style={styles.mov}>
-            <View style={styles.movRow}>
-              <View>
-                <Text style={styles.movDesc}>{m.desc}</Text>
-                <Text style={styles.movFecha}>{m.fecha}</Text>
-              </View>
-              <Text
-                style={[
-                  styles.movPuntos,
-                  { color: m.puntos.startsWith('-') ? colors.danger : colors.cashback },
-                ]}
-              >
-                {m.puntos}
-              </Text>
+        <Text style={styles.section}>Historial</Text>
+        <View style={styles.historialCard}>
+          {MOCK_HISTORIAL.map((item, index) => (
+            <View key={item.id}>
+              <HistorialItem item={item} />
+              {index < MOCK_HISTORIAL.length - 1 ? <View style={styles.separator} /> : null}
             </View>
-          </DeunaCard>
-        ))}
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 20, paddingBottom: 32 },
-  metrics: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  saldoLabel: { fontSize: 13, color: colors.textMuted },
-  saldo: { fontSize: 32, fontWeight: '800', color: colors.primary, marginTop: 4 },
-  section: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 20, marginBottom: 12 },
-  mov: { marginBottom: 10 },
-  movRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  movDesc: { fontSize: 15, fontWeight: '600', color: colors.text },
-  movFecha: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
-  movPuntos: { fontSize: 16, fontWeight: '700' },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  content: {
+    padding: spacing.lg,
+    paddingBottom: 32,
+  },
+  cuentaHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  cuentaTitulo: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  block: {
+    marginBottom: spacing.md,
+  },
+  section: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  historialCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  movRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+  },
+  movIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  movBody: {
+    flex: 1,
+  },
+  movDesc: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  movFecha: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  movMonto: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  montoPos: {
+    color: colors.cashback,
+  },
+  montoNeg: {
+    color: colors.text,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginHorizontal: 14,
+  },
 });
