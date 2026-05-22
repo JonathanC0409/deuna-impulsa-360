@@ -1,6 +1,6 @@
 {
   "name": "deuna-impulsa-360",
-  "main": "expo-router/entry",
+  "main": "App.js",
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~56.0.11",
