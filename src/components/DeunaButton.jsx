@@ -1,5 +1,5 @@
-import { Pressable, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { colors } from '../theme/colors';
+import { View, Pressable, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { colors, radii, typography, MIN_TOUCH_TARGET } from '../theme';
 
 const VARIANTS = {
   primary: {
@@ -17,6 +17,16 @@ const VARIANTS = {
     text: colors.primary,
     border: colors.primary,
   },
+  danger: {
+    bg: '#FFF0F3',
+    text: colors.danger,
+    border: colors.danger,
+  },
+  dangerFilled: {
+    bg: colors.danger,
+    text: colors.white,
+    border: colors.danger,
+  },
 };
 
 export default function DeunaButton({
@@ -26,6 +36,7 @@ export default function DeunaButton({
   disabled = false,
   loading = false,
   style,
+  leadingIcon,
 }) {
   const v = VARIANTS[variant] ?? VARIANTS.primary;
 
@@ -33,12 +44,14 @@ export default function DeunaButton({
     <Pressable
       onPress={onPress}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading }}
       style={({ pressed }) => [
         styles.button,
         {
           backgroundColor: v.bg,
           borderColor: v.border,
-          opacity: pressed || disabled ? 0.75 : 1,
+          opacity: pressed || disabled ? 0.82 : 1,
         },
         style,
       ]}
@@ -46,7 +59,10 @@ export default function DeunaButton({
       {loading ? (
         <ActivityIndicator color={v.text} />
       ) : (
-        <Text style={[styles.text, { color: v.text }]}>{title}</Text>
+        <View style={styles.content}>
+          {leadingIcon}
+          <Text style={[styles.text, typography.button, { color: v.text }]}>{title}</Text>
+        </View>
       )}
     </Pressable>
   );
@@ -54,16 +70,21 @@ export default function DeunaButton({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 52,
+    minHeight: MIN_TOUCH_TARGET + 8,
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 14,
+    borderRadius: radii.md,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   text: {
-    fontSize: 16,
-    fontWeight: '700',
+    textAlign: 'center',
   },
 });
