@@ -3,10 +3,14 @@ export const MOCK_CLIENTE = {
   email: 'maria@email.com',
   saldoDisponible: 156.8,
   cashbackAcumulado: 18.5,
+  gasto30Dias: 3.75,
   nivel: 'Bronce',
-  nivelProgreso: 0.42,
+  nivelProgreso: 0.2,
+  pagosMes: 1,
+  pagosMetaNivel: 5,
   puntosActuales: 420,
   puntosMeta: 1000,
+  cuentaEnmascarada: '******7602',
 };
 
 export const MOCK_PAGO = {
@@ -16,13 +20,46 @@ export const MOCK_PAGO = {
 };
 
 export const MOCK_BENEFICIOS_DESBLOQUEADOS = [
-  { id: 1, titulo: 'Cashback 1%', descripcion: 'En compras con QR Deuna', icono: 'cash' },
-  { id: 2, titulo: 'Giros ruleta', descripcion: '1 giro por cada $20 pagados', icono: 'gift' },
+  {
+    id: 1,
+    titulo: 'Hasta 1 giro de Gira y Gana',
+    descripcion: 'Te faltan 4 pagos para tu próxima chance de ganar',
+    icono: 'aperture',
+    iconName: 'aperture-outline',
+  },
+  {
+    id: 2,
+    titulo: 'Combos y promociones',
+    descripcion: 'Recibe descuentos, combos y promos únicas en tus negocios favoritos.',
+    icono: 'pricetag',
+    iconName: 'pricetag-outline',
+  },
+  {
+    id: 3,
+    titulo: 'Soporte 24 horas',
+    descripcion: 'Te ayudamos a través de nuestros canales de atención',
+    icono: 'headset',
+    iconName: 'headset-outline',
+  },
 ];
 
 export const MOCK_BENEFICIOS_PROXIMOS = [
-  { id: 3, titulo: 'Cashback 2%', descripcion: 'Nivel Plata', icono: 'trending-up', nivel: 'Plata' },
-  { id: 4, titulo: 'Envío gratis', descripcion: 'En aliados seleccionados', icono: 'car', nivel: 'Oro' },
+  {
+    id: 4,
+    titulo: 'Reembolsos de hasta el 3%',
+    descripcion: 'Completa más pagos y recibe reembolsos exclusivos.',
+    icono: 'cash',
+    iconName: 'cash-outline',
+    nivel: 'Plata',
+  },
+  {
+    id: 5,
+    titulo: 'Regalos e invitaciones',
+    descripcion: 'Continúa subiendo de nivel y participa por más premios únicos',
+    icono: 'gift',
+    iconName: 'gift-outline',
+    nivel: 'Oro',
+  },
 ];
 
 export const MOCK_HISTORIAL = [
@@ -63,8 +100,12 @@ export const MOCK_RECOMPENSAS_RECIENTES = [
 ];
 
 export const ACCESOS_RAPIDOS = [
-  { id: 'beneficios', label: 'Beneficios', icono: 'star', screen: 'Beneficios' },
-  { id: 'billetera', label: 'Billetera', icono: 'wallet', screen: 'Billetera' },
-  { id: 'recompensas', label: 'Recompensas', icono: 'gift', screen: 'MisRecompensas' },
+  { id: 'transferir', label: 'Transferir', icono: 'card', screen: 'Beneficios' },
+  { id: 'banco', label: 'Otro banco', icono: 'storefront', screen: 'Billetera' },
+  { id: 'recargar', label: 'Recargar', icono: 'wallet', screen: 'Billetera' },
+  { id: 'cobrar', label: 'Cobrar', icono: 'qr', screen: 'PagoExitoso' },
+  { id: 'beneficios', label: 'Beneficios', icono: 'gift', screen: 'Beneficios' },
+  { id: 'promos', label: 'Promociones', icono: 'pricetag', screen: 'Promociones' },
   { id: 'ruleta', label: 'Ruleta', icono: 'aperture', screen: 'Ruleta' },
+  { id: 'negocio', label: 'Mi negocio', icono: 'storefront', screen: 'Negocio' },
 ];

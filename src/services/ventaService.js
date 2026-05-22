@@ -194,3 +194,36 @@ export async function crearVentaConDetalle({
     total,
   };
 }
+
+/** Simula pago QR del cliente: crea venta mínima y devuelve datos para ruleta. */
+export async function simularPagoCliente({ idCliente, idNegocio, idItemNegocio, cantidad = 1 }) {
+  return crearVentaConDetalle({
+    idNegocio,
+    idCliente,
+    idItemNegocio,
+    cantidad,
+  });
+}
+
+export async function obtenerUltimasVentasNegocio(idNegocio, limite = 5) {
+  const { data, error } = await supabase
+    .from(TABLE_VENTAS)
+    .select('IdVenta, Total, FechaVenta, IdCliente, Usuarios:Nombre')
+    .eq('IdNegocio', idNegocio)
+    .order('FechaVenta', { ascending: false })
+    .limit(limite);
+
+  if (error) {
+    const fallback = await supabase
+      .from(TABLE_VENTAS)
+      .select('IdVenta, Total, FechaVenta, IdCliente')
+      .eq('IdNegocio', idNegocio)
+      .order('FechaVenta', { ascending: false })
+      .limit(limite);
+
+    if (fallback.error) throw fallback.error;
+    return fallback.data ?? [];
+  }
+
+  return data ?? [];
+}

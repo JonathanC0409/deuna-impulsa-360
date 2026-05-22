@@ -1,10 +1,24 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import SaldoCard from '../../components/cliente/SaldoCard';
+import ScreenContainer from '../../components/ScreenContainer';
 import CashbackCard from '../../components/cliente/CashbackCard';
-import { colors, spacing } from '../../components/cliente/clienteTheme';
+import { colors, spacing, radii, typography, shadows } from '../../components/cliente/clienteTheme';
 import { MOCK_CLIENTE, MOCK_HISTORIAL } from '../../components/cliente/mockClienteData';
+
+function CuentaRow({ titulo, monto, icon, iconBg, iconColor = colors.white }) {
+  return (
+    <View style={styles.cuentaRow}>
+      <View style={[styles.cuentaIcon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={22} color={iconColor} />
+      </View>
+      <View style={styles.cuentaBody}>
+        <Text style={styles.cuentaTitulo}>{titulo}</Text>
+        <Text style={styles.cuentaMonto}>${monto.toFixed(2)}</Text>
+      </View>
+    </View>
+  );
+}
 
 function HistorialItem({ item }) {
   const esIngreso = item.monto > 0;
@@ -34,24 +48,43 @@ function HistorialItem({ item }) {
 export default function BilleteraScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.cuentaHeader}>
-          <Ionicons name="logo-usd" size={20} color={colors.primary} />
-          <Text style={styles.cuentaTitulo}>Cuenta Deuna</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenContainer style={styles.inner}>
+          <Text style={styles.section}>Cuentas</Text>
+          <View style={styles.cuentasCard}>
+            <CuentaRow
+              titulo={`Deuna ${MOCK_CLIENTE.cuentaEnmascarada}`}
+              monto={MOCK_CLIENTE.saldoDisponible}
+              icon="wallet"
+              iconBg={colors.primary}
+            />
+            <View style={styles.separator} />
+            <CuentaRow
+              titulo="******5883"
+              monto={0.38}
+              icon="card"
+              iconBg="#FFEB3B"
+              iconColor={colors.text}
+            />
+          </View>
 
-        <SaldoCard saldo={MOCK_CLIENTE.saldoDisponible} style={styles.block} />
-        <CashbackCard monto={MOCK_CLIENTE.cashbackAcumulado} compact style={styles.block} />
+          <Pressable style={styles.linkRow}>
+            <Text style={styles.linkText}>No veo todas mis cuentas</Text>
+            <Ionicons name="open-outline" size={16} color={colors.link} />
+          </Pressable>
 
-        <Text style={styles.section}>Historial</Text>
-        <View style={styles.historialCard}>
-          {MOCK_HISTORIAL.map((item, index) => (
-            <View key={item.id}>
-              <HistorialItem item={item} />
-              {index < MOCK_HISTORIAL.length - 1 ? <View style={styles.separator} /> : null}
-            </View>
-          ))}
-        </View>
+          <CashbackCard monto={MOCK_CLIENTE.cashbackAcumulado} compact style={styles.block} />
+
+          <Text style={styles.section}>Historial</Text>
+          <View style={styles.historialCard}>
+            {MOCK_HISTORIAL.map((item, index) => (
+              <View key={item.id}>
+                <HistorialItem item={item} />
+                {index < MOCK_HISTORIAL.length - 1 ? <View style={styles.sepInner} /> : null}
+              </View>
+            ))}
+          </View>
+        </ScreenContainer>
       </ScrollView>
     </SafeAreaView>
   );
@@ -60,50 +93,89 @@ export default function BilleteraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundAlt,
   },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: 32,
+  scroll: {
+    paddingBottom: spacing.xxxl,
   },
-  cuentaHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: spacing.md,
-  },
-  cuentaTitulo: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  block: {
-    marginBottom: spacing.md,
+  inner: {
+    paddingTop: spacing.sm,
   },
   section: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: spacing.sm,
+    ...typography.h2,
     marginBottom: spacing.md,
+  },
+  cuentasCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  cuentaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  cuentaIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cuentaBody: {
+    flex: 1,
+  },
+  cuentaTitulo: {
+    ...typography.bodyBold,
+    fontSize: 15,
+  },
+  cuentaMonto: {
+    ...typography.caption,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginHorizontal: spacing.lg,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.xl,
+  },
+  linkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.link,
+    textDecorationLine: 'underline',
+  },
+  block: {
+    marginBottom: spacing.xl,
   },
   historialCard: {
     backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 4,
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.card,
   },
   movRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    gap: 12,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
   movIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radii.md,
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -112,13 +184,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   movDesc: {
+    ...typography.bodyBold,
     fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
   },
   movFecha: {
-    fontSize: 12,
-    color: colors.textMuted,
+    ...typography.caption,
     marginTop: 2,
   },
   movMonto: {
@@ -131,9 +201,9 @@ const styles = StyleSheet.create({
   montoNeg: {
     color: colors.text,
   },
-  separator: {
+  sepInner: {
     height: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: 14,
+    backgroundColor: colors.divider,
+    marginHorizontal: spacing.lg,
   },
 });

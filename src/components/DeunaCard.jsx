@@ -1,21 +1,22 @@
 import { View, StyleSheet } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, radii, shadows, spacing } from '../theme';
 
-export default function DeunaCard({ children, style }) {
-  return <View style={[styles.card, style]}>{children}</View>;
+export default function DeunaCard({ children, style, elevated = false }) {
+  return (
+    <View style={[styles.card, elevated && styles.elevated, style]}>{children}</View>
+  );
 }
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#4B168C',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
+    ...shadows.card,
+  },
+  elevated: {
+    ...shadows.cardElevated,
   },
 });

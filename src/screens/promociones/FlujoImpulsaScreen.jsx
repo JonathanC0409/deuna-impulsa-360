@@ -3,13 +3,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import ModuloQuickNav from '../../components/ModuloQuickNav';
-import { colors } from '../../theme/colors';
+import ScreenContainer from '../../components/ScreenContainer';
+import { colors, spacing, radii, typography } from '../../theme';
 import { MOCK_FLUJO_PASOS } from '../../data/mockData';
 
 export default function FlujoImpulsaScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenContainer>
         <View style={styles.hero}>
           <Text style={styles.badge}>MVP · Demo</Text>
           <Text style={styles.heroTitle}>Deuna Impulsa 360</Text>
@@ -78,19 +80,20 @@ export default function FlujoImpulsaScreen({ navigation }) {
           onPress={() => navigation.navigate('Cliente')}
           style={styles.btn}
         />
+        </ScreenContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: colors.backgroundAlt },
+  scroll: { paddingBottom: spacing.xxxl, paddingTop: spacing.md },
   hero: {
     backgroundColor: colors.primary,
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 16,
+    borderRadius: radii.xxl,
+    padding: spacing.xxl,
+    marginBottom: spacing.lg,
   },
   badge: {
     alignSelf: 'flex-start',
@@ -104,12 +107,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     overflow: 'hidden',
   },
-  heroTitle: { fontSize: 26, fontWeight: '800', color: colors.white },
+  heroTitle: { ...typography.hero, color: colors.white, fontSize: 24 },
   heroSub: {
-    fontSize: 14,
+    ...typography.body,
     color: 'rgba(255,255,255,0.9)',
-    marginTop: 10,
-    lineHeight: 22,
+    marginTop: spacing.sm,
   },
   timeline: { marginTop: 8 },
   pasoWrap: { flexDirection: 'row', marginBottom: 4 },

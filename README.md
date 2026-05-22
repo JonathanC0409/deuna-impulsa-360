@@ -49,7 +49,8 @@ Documento completo del MVP (problema, solución, Hooked, ISO):
 
 - No modificar `App.js`, `src/config/supabase.js` ni `package.json` sin coordinación.
 - Servicios por módulo en `src/services/`.
-- Paleta Deuna: `src/theme/colors.js` (morado `#4B168C`, cashback `#00C896`).
+- Sistema de diseño: `src/theme/` (colores `#4B2185`, tipografía, espaciado, sombras multiplataforma).
+- Contenedor responsive web/móvil: `src/components/ScreenContainer.jsx` (max 480px centrado en web).
 
 ## Rama de trabajo
 

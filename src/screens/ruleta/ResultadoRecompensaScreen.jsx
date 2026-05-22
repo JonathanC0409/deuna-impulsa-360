@@ -1,16 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import DeunaButton from '../../components/DeunaButton';
-import DeunaCard from '../../components/DeunaCard';
-
-const COLORS = {
-  background: '#F8F7FF',
-  primary: '#7C3AED',
-  cashback: '#00C896',
-  text: '#1E1E1E',
-  textMuted: '#6F6F7A',
-};
+import ScreenContainer from '../../components/ScreenContainer';
+import { colors, spacing, radii, typography, shadows } from '../../theme';
+import { useAuth } from '../../context/AuthContext';
 
 const NIVEL_LABELS = {
   1: 'Giro básico',
@@ -19,231 +15,187 @@ const NIVEL_LABELS = {
   4: 'Giro premium',
 };
 
+const TIPO_ICON = {
+  cashback: 'cash',
+  descuento: 'pricetag',
+  giro_premium: 'aperture',
+  sorpresa: 'gift',
+};
+
 function formatearValor(premio) {
   if (premio?.tipo === 'cashback' && premio.valor != null) {
     return `$${Number(premio.valor).toFixed(2)}`;
   }
   if (premio?.tipo === 'descuento' && premio.valor != null) {
-    return `${premio.valor}%`;
+    return `${premio.valor}% OFF`;
   }
-  if (premio?.tipo === 'giro_premium') {
-    return '1 giro extra';
-  }
-  if (premio?.tipo === 'sorpresa') {
-    return '¡Sorpresa!';
-  }
-  return premio?.valor != null ? String(premio.valor) : '—';
+  if (premio?.tipo === 'giro_premium') return 'Giro premium';
+  return 'Premio sorpresa';
 }
 
 export default function ResultadoRecompensaScreen({ navigation, route }) {
+  const router = useRouter();
+  const { limpiarGiroBienvenida } = useAuth();
   const { premio, recompensa, nombreNegocio, nivelGiro } = route?.params ?? {};
 
-  const scale = useRef(new Animated.Value(0.6)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    limpiarGiroBienvenida?.();
     Animated.parallel([
-      Animated.spring(scale, {
-        toValue: 1,
-        friction: 6,
-        tension: 80,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }),
+      Animated.spring(scale, { toValue: 1, friction: 5, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }),
     ]).start();
-  }, [opacity, scale]);
+  }, [limpiarGiroBienvenida, opacity, scale]);
+
+  const irInicio = () => router.replace('/cliente');
+  const irRecompensas = () => router.push('/cliente/mis-recompensas');
 
   if (!premio?.label) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.content}>
+      <SafeAreaView style={styles.safe}>
+        <ScreenContainer style={styles.centered}>
           <Text style={styles.errorTitle}>Premio no disponible</Text>
-          <Text style={styles.errorText}>
-            No recibimos los datos del premio. Vuelve al inicio e intenta de nuevo.
-          </Text>
-          <DeunaButton
-            title="Volver al inicio"
-            onPress={() =>
-              navigation.navigate('Cliente', {
-                screen: 'ClienteTabs',
-                params: { screen: 'Inicio' },
-              })
-            }
-          />
-        </View>
+          <DeunaButton title="Volver al inicio" onPress={irInicio} />
+        </ScreenContainer>
       </SafeAreaView>
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.emoji}>🎉</Text>
-        <Text style={styles.title}>¡Felicidades!</Text>
-        {nombreNegocio ? (
-          <Text style={styles.negocio}>Ganaste en {nombreNegocio}</Text>
-        ) : null}
-        {nivelGiro ? (
-          <Text style={styles.nivel}>{NIVEL_LABELS[nivelGiro] ?? `Nivel ${nivelGiro}`}</Text>
-        ) : null}
+  const iconName = TIPO_ICON[premio.tipo] ?? 'gift';
 
+  return (
+    <SafeAreaView style={styles.safe}>
+      <ScreenContainer style={styles.content}>
         <Animated.View style={{ transform: [{ scale }], opacity, width: '100%' }}>
-          <DeunaCard style={styles.card}>
-            <Text style={styles.premioLabel}>{premio.label}</Text>
-            <View style={styles.detalleRow}>
-              <Text style={styles.detalleKey}>Tipo</Text>
-              <Text style={styles.detalleVal}>{premio.tipo}</Text>
-            </View>
-            <View style={styles.detalleRow}>
-              <Text style={styles.detalleKey}>Valor</Text>
-              <Text style={[styles.detalleVal, styles.valorDestacado]}>
-                {formatearValor(premio)}
+          <View style={styles.confettiCircle}>
+            <Text style={styles.confettiEmoji}>🎉</Text>
+          </View>
+
+          <Text style={styles.title}>¡Felicidades!</Text>
+          <Text style={styles.sub}>Ganaste en {nombreNegocio ?? 'tu compra'}</Text>
+          {nivelGiro ? (
+            <View style={styles.nivelPill}>
+              <Text style={styles.nivelPillText}>
+                {NIVEL_LABELS[nivelGiro] ?? `Nivel ${nivelGiro}`}
               </Text>
             </View>
-            {recompensa?.estado ? (
-              <View style={styles.estadoBadge}>
-                <Text style={styles.estadoText}>Guardado · {recompensa.estado}</Text>
-              </View>
-            ) : null}
-          </DeunaCard>
+          ) : null}
+
+          <View style={styles.premioCard}>
+            <View style={styles.premioIconWrap}>
+              <Ionicons name={iconName} size={32} color={colors.white} />
+            </View>
+            <Text style={styles.premioLabel}>{premio.label}</Text>
+            <Text style={styles.premioValor}>{formatearValor(premio)}</Text>
+            <View style={styles.estadoRow}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.cashback} />
+              <Text style={styles.estadoText}>
+                {recompensa?.estado === 'disponible' || recompensa?.Estado === 'Pendiente'
+                  ? 'Acreditación en menos de 24 horas'
+                  : 'Guardado en tu cuenta'}
+              </Text>
+            </View>
+          </View>
         </Animated.View>
 
-        <DeunaButton
-          title="Ver mis recompensas"
-          onPress={() =>
-            navigation.navigate('Cliente', {
-              screen: 'MisRecompensas',
-            })
-          }
-          style={styles.btn}
-        />
-        <DeunaButton
-          title="Volver al inicio"
-          variant="outline"
-          onPress={() =>
-            navigation.navigate('Cliente', {
-              screen: 'ClienteTabs',
-              params: { screen: 'Inicio' },
-            })
-          }
-          style={styles.gap}
-        />
-      </View>
+        <DeunaButton title="Ver mis recompensas" onPress={irRecompensas} style={styles.btn} />
+        <DeunaButton title="Volver al inicio" variant="outline" onPress={irInicio} />
+      </ScreenContainer>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  safe: { flex: 1, backgroundColor: colors.primaryLight },
   content: {
     flex: 1,
-    padding: 24,
     justifyContent: 'center',
+    paddingVertical: spacing.xxl,
+  },
+  centered: { flex: 1, justifyContent: 'center' },
+  confettiCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.white,
     alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+    ...shadows.card,
   },
-  emoji: {
-    fontSize: 64,
-    textAlign: 'center',
-  },
+  confettiEmoji: { fontSize: 40 },
   title: {
-    fontSize: 28,
-    fontWeight: '800',
+    ...typography.h1,
+    color: colors.primary,
     textAlign: 'center',
-    color: COLORS.primary,
-    marginVertical: 12,
   },
-  negocio: {
-    fontSize: 15,
-    color: COLORS.textMuted,
-    marginBottom: 4,
+  sub: {
+    ...typography.body,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
-  nivel: {
-    fontSize: 13,
-    color: COLORS.primary,
-    fontWeight: '600',
-    marginBottom: 20,
+  nivelPill: {
+    alignSelf: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
-  card: {
+  nivelPillText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  premioCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: spacing.xxl,
     alignItems: 'center',
-    width: '100%',
-    borderRadius: 24,
-    paddingVertical: 28,
-    marginBottom: 24,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 14,
-    elevation: 4,
+    marginBottom: spacing.xl,
+    ...shadows.cardElevated,
+  },
+  premioIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.cashback,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
   premioLabel: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: COLORS.cashback,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  detalleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E8E2F2',
-  },
-  detalleKey: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textTransform: 'capitalize',
-  },
-  detalleVal: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.text,
-    textTransform: 'capitalize',
-  },
-  valorDestacado: {
-    color: COLORS.cashback,
     fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
   },
-  estadoBadge: {
-    marginTop: 16,
-    backgroundColor: '#EEE5FF',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 12,
+  premioValor: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: colors.cashback,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  estadoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: '#E6FBF5',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
   },
   estadoText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: colors.cashbackDark,
+    flex: 1,
   },
-  btn: {
-    width: '100%',
-    borderRadius: 18,
-  },
-  gap: {
-    marginTop: 12,
-    width: '100%',
-    borderRadius: 18,
-  },
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.primary,
-    marginBottom: 8,
-  },
-  errorText: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
+  btn: { marginBottom: spacing.md },
+  errorTitle: { ...typography.h2, marginBottom: spacing.lg },
 });

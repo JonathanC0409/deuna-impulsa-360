@@ -15,9 +15,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import { colors } from '../../theme/colors';
-import { ID_NEGOCIO_ACTIVO } from '../../constants/negocioActivo';
+import { useAuth } from '../../context/AuthContext';
 import { obtenerItemsNegocio } from '../../services/itemService';
 import { obtenerClientes, crearVentaConDetalle } from '../../services/ventaService';
+import { esHorarioPromocionalActivo } from '../../services/promocionService';
+import { obtenerNegocio } from '../../services/negocioService';
 
 function SelectorModal({ visible, title, data, onSelect, onClose, labelKey }) {
   return (
@@ -70,6 +72,7 @@ const modalStyles = StyleSheet.create({
 });
 
 export default function RegistrarVentaScreen({ navigation }) {
+  const { idNegocio } = useAuth();
   const [clientes, setClientes] = useState([]);
   const [items, setItems] = useState([]);
   const [cliente, setCliente] = useState(null);
@@ -89,9 +92,10 @@ export default function RegistrarVentaScreen({ navigation }) {
 
   const cargar = async () => {
     try {
+      if (!idNegocio) return;
       const [c, i] = await Promise.all([
         obtenerClientes(),
-        obtenerItemsNegocio(ID_NEGOCIO_ACTIVO),
+        obtenerItemsNegocio(idNegocio),
       ]);
       setClientes(c);
       setItems(i.filter((x) => x.Estado !== 'Agotado' || !x.ManejaStock));
@@ -106,9 +110,13 @@ export default function RegistrarVentaScreen({ navigation }) {
     setExito(null);
     setLoading(true);
     cargar();
-  }, []);
+  }, [idNegocio]);
 
   const handleConfirmar = async () => {
+    if (!idNegocio) {
+      Alert.alert('Sesión', 'No hay negocio vinculado a tu cuenta.');
+      return;
+    }
     if (!cliente || !item) {
       Alert.alert('Selección incompleta', 'Elige cliente e ítem.');
       return;
@@ -122,26 +130,34 @@ export default function RegistrarVentaScreen({ navigation }) {
     setProcesando(true);
     try {
       const resultado = await crearVentaConDetalle({
-        idNegocio: ID_NEGOCIO_ACTIVO,
+        idNegocio,
         idCliente: cliente.IdUsuario,
         idItemNegocio: item.IdItemNegocio,
         cantidad: qty,
       });
 
+      const negocio = await obtenerNegocio(idNegocio);
+      const horarioPromo = await esHorarioPromocionalActivo(idNegocio);
+      const cashback = Number((resultado.total * 0.05).toFixed(2));
+
       setExito(resultado);
 
       Alert.alert(
         'Venta exitosa',
-        `Cobro Deuna confirmado por $${resultado.total.toFixed(2)}`,
+        `Cobro Deuna confirmado por $${resultado.total.toFixed(2)}. El cliente puede girar la ruleta.`,
         [
           {
-            text: 'Ver pago exitoso',
+            text: 'Ver flujo cliente',
             onPress: () => {
               navigation.getParent()?.getParent()?.navigate('Cliente', {
                 screen: 'PagoExitoso',
                 params: {
-                  puntos: Math.floor(resultado.total * 10),
-                  total: resultado.total,
+                  ventaId: resultado.venta.IdVenta,
+                  negocioId: idNegocio,
+                  monto: resultado.total,
+                  comercio: negocio.NombreNegocio,
+                  cashback,
+                  esHorarioPromocional: horarioPromo,
                 },
               });
             },

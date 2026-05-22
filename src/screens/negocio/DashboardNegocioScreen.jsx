@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -12,11 +13,13 @@ import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import MetricCard from '../../components/MetricCard';
 import { colors } from '../../theme/colors';
-import { ID_NEGOCIO_ACTIVO } from '../../constants/negocioActivo';
+import { useAuth } from '../../context/AuthContext';
 import { obtenerResumenDashboard } from '../../services/ventaService';
 import { listarAlertasActivas } from '../../services/alertaService';
 
 export default function DashboardNegocioScreen({ navigation }) {
+  const router = useRouter();
+  const { idNegocio, negocio, signOut } = useAuth();
   const [resumen, setResumen] = useState(null);
   const [alertas, setAlertas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,9 +27,10 @@ export default function DashboardNegocioScreen({ navigation }) {
 
   const cargar = async () => {
     try {
+      if (!idNegocio) return;
       const [data, alertasData] = await Promise.all([
-        obtenerResumenDashboard(ID_NEGOCIO_ACTIVO),
-        listarAlertasActivas(ID_NEGOCIO_ACTIVO, 3),
+        obtenerResumenDashboard(idNegocio),
+        listarAlertasActivas(idNegocio, 3),
       ]);
       setResumen(data);
       setAlertas(alertasData);
@@ -41,7 +45,7 @@ export default function DashboardNegocioScreen({ navigation }) {
   useEffect(() => {
     setLoading(true);
     cargar();
-  }, []);
+  }, [idNegocio]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -73,7 +77,7 @@ export default function DashboardNegocioScreen({ navigation }) {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Text style={styles.greeting}>Hola, {r.nombreNegocio}</Text>
+        <Text style={styles.greeting}>Hola, {negocio?.NombreNegocio ?? r.nombreNegocio}</Text>
         <Text style={styles.subtitle}>Resumen de tu negocio</Text>
 
         <View style={styles.metricsRow}>
@@ -124,6 +128,15 @@ export default function DashboardNegocioScreen({ navigation }) {
           title="Registrar venta"
           variant="cashback"
           onPress={() => navigation.navigate('RegistrarVenta')}
+          style={styles.gap}
+        />
+        <DeunaButton
+          title="Cerrar sesión"
+          variant="outline"
+          onPress={async () => {
+            await signOut();
+            router.replace('/');
+          }}
           style={styles.gap}
         />
       </ScrollView>

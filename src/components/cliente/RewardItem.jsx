@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, shadows, radii } from './clienteTheme';
+import { colors, shadows, radii, spacing, typography } from './clienteTheme';
 
 const ESTADO_STYLES = {
   disponible: {
@@ -14,7 +14,7 @@ const ESTADO_STYLES = {
     label: 'Canjeada',
   },
   expirada: {
-    bg: '#FFF0F3',
+    bg: colors.bannerPink,
     text: colors.danger,
     label: 'Expirada',
   },
@@ -26,7 +26,7 @@ export default function RewardItem({ titulo, negocio, estado = 'disponible', fec
   const inner = (
     <View style={styles.card}>
       <View style={styles.iconWrap}>
-        <Ionicons name="ribbon-outline" size={22} color={colors.turquoise} />
+        <Ionicons name="ribbon-outline" size={22} color={colors.primary} />
       </View>
       <View style={styles.body}>
         <Text style={styles.titulo}>{titulo}</Text>
@@ -56,10 +56,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     borderRadius: radii.lg,
-    padding: 14,
+    padding: spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 12,
+    gap: spacing.md,
     ...shadows.card,
   },
   pressed: {
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -77,18 +77,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   titulo: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
+    ...typography.bodyBold,
   },
   negocio: {
-    fontSize: 13,
-    color: colors.textMuted,
+    ...typography.caption,
     marginTop: 2,
   },
   fecha: {
-    fontSize: 11,
-    color: colors.textMuted,
+    ...typography.caption,
     marginTop: 4,
   },
   badge: {

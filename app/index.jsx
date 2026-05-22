@@ -1,14 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-const COLORS = {
-  primary: '#4B168C',
-  cashback: '#00C896',
-  white: '#FFFFFF',
-  text: '#1E1E1E',
-  textMuted: '#6F6F7A',
-};
+import { colors, spacing, typography, radii } from '../src/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -19,82 +12,56 @@ export default function HomeScreen() {
         <Text style={styles.logo}>deuna!</Text>
         <Text style={styles.title}>Deuna Impulsa 360</Text>
         <Text style={styles.subtitle}>
-          Más ventas para tu negocio, más recompensas para tus clientes
+          Inventario para el negocio. Ruleta de premios para el cliente. Más transacciones para
+          Deuna.
         </Text>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonPrimary]}
-          activeOpacity={0.85}
-          onPress={() => router.push('/negocio')}
-        >
-          <Text style={styles.buttonTextLight}>Entrar como Negocio</Text>
-        </TouchableOpacity>
+        <Pressable style={styles.card} onPress={() => router.push('/login-cliente')}>
+          <Text style={styles.cardTitle}>Entrar como cliente</Text>
+          <Text style={styles.cardSub}>Solo tu correo · demo</Text>
+        </Pressable>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonOutline]}
-          activeOpacity={0.85}
-          onPress={() => router.push('/cliente')}
+        <Pressable
+          style={[styles.card, styles.cardOutline]}
+          onPress={() => router.push('/login-negocio')}
         >
-          <Text style={styles.buttonTextPrimary}>Entrar como Cliente</Text>
-        </TouchableOpacity>
+          <Text style={[styles.cardTitle, styles.cardTitlePurple]}>Entrar como negocio</Text>
+          <Text style={[styles.cardSub, styles.cardSubOutline]}>Solo tu correo · demo</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
+  safe: { flex: 1, backgroundColor: colors.backgroundAlt },
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 28,
-    backgroundColor: COLORS.white,
+    paddingHorizontal: spacing.xl,
   },
   logo: {
     fontSize: 42,
-    fontWeight: '800',
-    color: COLORS.primary,
-    marginBottom: 8,
+    fontWeight: '900',
+    color: colors.primary,
+    fontStyle: 'italic',
+    marginBottom: spacing.sm,
   },
-  title: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: 12,
+  title: { ...typography.h1, marginBottom: spacing.md },
+  subtitle: { ...typography.body, marginBottom: spacing.xxl },
+  card: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
-  subtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: COLORS.textMuted,
-    marginBottom: 40,
-  },
-  button: {
-    minHeight: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-    paddingHorizontal: 24,
-  },
-  buttonPrimary: {
-    backgroundColor: COLORS.primary,
-  },
-  buttonOutline: {
-    backgroundColor: COLORS.white,
+  cardOutline: {
+    backgroundColor: colors.white,
     borderWidth: 2,
-    borderColor: COLORS.primary,
+    borderColor: colors.primary,
   },
-  buttonTextLight: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  buttonTextPrimary: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  cardTitle: { fontSize: 17, fontWeight: '800', color: colors.white },
+  cardTitlePurple: { color: colors.primary },
+  cardSub: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 4 },
+  cardSubOutline: { color: colors.textMuted },
 });

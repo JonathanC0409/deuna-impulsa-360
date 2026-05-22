@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii } from './clienteTheme';
+import { colors, radii, spacing, typography, shadows } from './clienteTheme';
 
 export default function BannerPromo({
   titulo = 'Paga con Deuna y gana giros',
@@ -11,8 +11,11 @@ export default function BannerPromo({
   const content = (
     <View style={[styles.banner, style]}>
       <View style={styles.textCol}>
-        <Text style={styles.badge}>Promo</Text>
         <Text style={styles.titulo}>{titulo}</Text>
+        <Pressable style={styles.linkRow}>
+          <Text style={styles.link}>Conoce más</Text>
+          <Ionicons name="open-outline" size={14} color={colors.primary} />
+        </Pressable>
         <Text style={styles.subtitulo}>{subtitulo}</Text>
       </View>
       <View style={styles.iconCircle}>
@@ -23,7 +26,11 @@ export default function BannerPromo({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [{ opacity: pressed ? 0.92 : 1 }]}
+        accessibilityRole="button"
+      >
         {content}
       </Pressable>
     );
@@ -38,36 +45,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.primaryLight,
     borderRadius: radii.lg,
-    padding: 18,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    gap: 12,
+    borderColor: colors.borderLight,
+    gap: spacing.md,
+    ...shadows.card,
   },
   textCol: {
     flex: 1,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primary,
-    backgroundColor: colors.white,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
-    overflow: 'hidden',
-    marginBottom: 6,
-  },
   titulo: {
-    fontSize: 16,
-    fontWeight: '800',
+    ...typography.h3,
     color: colors.primary,
     lineHeight: 22,
   },
-  subtitulo: {
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  link: {
     fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 4,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  subtitulo: {
+    ...typography.caption,
     lineHeight: 18,
   },
   iconCircle: {

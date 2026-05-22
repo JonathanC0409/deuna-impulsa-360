@@ -1,56 +1,73 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenContainer from '../../components/ScreenContainer';
 import CashbackCard from '../../components/cliente/CashbackCard';
 import RewardItem from '../../components/cliente/RewardItem';
-import { colors, spacing, radii } from '../../components/cliente/clienteTheme';
+import { colors, spacing, radii, typography, shadows } from '../../components/cliente/clienteTheme';
+import { useAuth } from '../../context/AuthContext';
 import {
-  MOCK_CLIENTE,
-  MOCK_PREMIOS,
-  MOCK_RECOMPENSAS_RECIENTES,
-} from '../../components/cliente/mockClienteData';
-
-function PremioRow({ item }) {
-  return (
-    <View style={styles.premioRow}>
-      <View style={styles.premioIcon}>
-        <Ionicons name="trophy-outline" size={20} color={colors.primary} />
-      </View>
-      <View style={styles.premioBody}>
-        <Text style={styles.premioTitulo}>{item.titulo}</Text>
-        <Text style={styles.premioFecha}>{item.fecha}</Text>
-      </View>
-    </View>
-  );
-}
+  obtenerRecompensasUsuario,
+  totalCashbackDisponible,
+} from '../../services/recompensaService';
 
 export default function MisRecompensasScreen() {
+  const { usuario } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [cashback, setCashback] = useState(0);
+  const [recompensas, setRecompensas] = useState([]);
+
+  useEffect(() => {
+    if (!usuario?.IdUsuario) return;
+    (async () => {
+      try {
+        const [cb, rec] = await Promise.all([
+          totalCashbackDisponible(usuario.IdUsuario),
+          obtenerRecompensasUsuario(usuario.IdUsuario),
+        ]);
+        setCashback(cb);
+        setRecompensas(rec);
+      } catch (e) {
+        console.error('Recompensas:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [usuario?.IdUsuario]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <CashbackCard monto={MOCK_CLIENTE.cashbackAcumulado} style={styles.block} />
+        <ScreenContainer>
+          <CashbackCard monto={cashback} style={styles.block} />
 
-        <Text style={styles.section}>Premios ganados</Text>
-        <View style={styles.premiosCard}>
-          {MOCK_PREMIOS.map((item, index) => (
-            <View key={item.id}>
-              <PremioRow item={item} />
-              {index < MOCK_PREMIOS.length - 1 ? <View style={styles.separator} /> : null}
-            </View>
-          ))}
-        </View>
-
-        <Text style={[styles.section, styles.sectionSpaced]}>Tus recompensas</Text>
-        {MOCK_RECOMPENSAS_RECIENTES.map((item) => (
-          <View key={item.id} style={styles.rewardWrap}>
-            <RewardItem
-              titulo={item.titulo}
-              negocio={item.negocio}
-              estado={item.estado}
-              fecha={item.fecha}
-            />
-          </View>
-        ))}
+          <Text style={styles.section}>Tus recompensas ({recompensas.length})</Text>
+          {recompensas.length === 0 ? (
+            <Text style={styles.empty}>
+              Gira la ruleta después de pagar con Deuna. Siempre ganas un premio.
+            </Text>
+          ) : (
+            recompensas.map((item) => (
+              <View key={item.IdRecompensa ?? item.id} style={styles.rewardWrap}>
+                <RewardItem
+                  titulo={item.titulo ?? item.Premio}
+                  negocio={item.TipoRecompensa}
+                  estado={item.estado}
+                  fecha={item.FechaGanada ? new Date(item.FechaGanada).toLocaleDateString('es-EC') : ''}
+                />
+              </View>
+            ))
+          )}
+        </ScreenContainer>
       </ScrollView>
     </SafeAreaView>
   );
@@ -59,64 +76,25 @@ export default function MisRecompensasScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundAlt,
   },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   content: {
-    padding: spacing.lg,
-    paddingBottom: 32,
+    paddingBottom: spacing.xxxl,
+    paddingTop: spacing.md,
   },
   block: {
     marginBottom: spacing.lg,
   },
   section: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
+    ...typography.h2,
     marginBottom: spacing.md,
   },
-  sectionSpaced: {
-    marginTop: spacing.sm,
-  },
-  premiosCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.md,
-  },
-  premioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    gap: 12,
-  },
-  premioIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  premioBody: {
-    flex: 1,
-  },
-  premioTitulo: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  premioFecha: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginHorizontal: 14,
+  empty: {
+    ...typography.body,
+    marginBottom: spacing.lg,
   },
   rewardWrap: {
-    marginBottom: 10,
+    marginBottom: spacing.md,
   },
 });

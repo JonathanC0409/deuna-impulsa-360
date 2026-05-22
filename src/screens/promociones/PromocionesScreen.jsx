@@ -5,7 +5,8 @@ import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import PromocionCard from '../../components/PromocionCard';
 import ModuloQuickNav from '../../components/ModuloQuickNav';
-import { colors } from '../../theme/colors';
+import ScreenContainer from '../../components/ScreenContainer';
+import { colors, spacing, radii, typography, shadows } from '../../theme';
 import {
   MOCK_PROMOCIONES,
   MOCK_BENEFICIOS_INTELIGENTES,
@@ -43,6 +44,7 @@ export default function PromocionesScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenContainer>
         <View style={styles.hero}>
           <Text style={styles.heroEmoji}>✨</Text>
           <Text style={styles.heroTitle}>Promociones Deuna</Text>
@@ -155,51 +157,52 @@ export default function PromocionesScreen({ navigation }) {
           onPress={() => navigation.navigate('Cliente')}
           style={styles.footerBtn}
         />
+        </ScreenContainer>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: colors.backgroundAlt },
+  scroll: { paddingBottom: spacing.xxxl, paddingTop: spacing.md },
   hero: {
     backgroundColor: colors.primaryLight,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: radii.xl,
+    padding: spacing.xl,
+    marginBottom: spacing.lg,
     alignItems: 'center',
+    ...shadows.card,
   },
-  heroEmoji: { fontSize: 32, marginBottom: 8 },
-  heroTitle: { fontSize: 22, fontWeight: '800', color: colors.primary, textAlign: 'center' },
+  heroEmoji: { fontSize: 32, marginBottom: spacing.sm },
+  heroTitle: { ...typography.h1, color: colors.primary, textAlign: 'center' },
   heroSub: {
-    fontSize: 14,
-    color: colors.textMuted,
+    ...typography.body,
     textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
+    marginTop: spacing.sm,
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 8,
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.card,
   },
   stat: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 22, fontWeight: '800', color: colors.text },
-  statLabel: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+  statValue: { ...typography.amountSm, fontSize: 22, color: colors.text },
+  statLabel: { ...typography.caption, marginTop: 4 },
   statDivider: { width: 1, backgroundColor: colors.border },
-  section: { marginTop: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 4 },
-  sectionHint: { fontSize: 13, color: colors.textMuted, marginBottom: 12 },
-  inteligenteCard: { marginBottom: 10 },
+  section: { marginTop: spacing.xl },
+  sectionTitle: { ...typography.h2 },
+  sectionHint: { ...typography.caption, marginBottom: spacing.md },
+  inteligenteCard: { marginBottom: spacing.sm },
   inteligenteRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  inteligenteIcon: { fontSize: 28, marginRight: 12 },
+  inteligenteIcon: { fontSize: 28, marginRight: spacing.md },
   inteligenteBody: { flex: 1 },
-  inteligenteTitulo: { fontSize: 15, fontWeight: '700', color: colors.text },
-  inteligenteDesc: { fontSize: 13, color: colors.textMuted, marginTop: 4, lineHeight: 18 },
-  footerBtn: { marginTop: 12 },
+  inteligenteTitulo: { ...typography.bodyBold },
+  inteligenteDesc: { ...typography.caption, marginTop: 4, lineHeight: 18 },
+  footerBtn: { marginTop: spacing.md },
 });

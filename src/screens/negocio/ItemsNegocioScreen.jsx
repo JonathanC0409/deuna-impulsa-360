@@ -11,18 +11,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import { colors } from '../../theme/colors';
-import { ID_NEGOCIO_ACTIVO } from '../../constants/negocioActivo';
+import { useAuth } from '../../context/AuthContext';
 import { obtenerItemsNegocio } from '../../services/itemService';
 import EstadoItemBadge from './components/EstadoItemBadge';
 
 export default function ItemsNegocioScreen({ navigation }) {
+  const { idNegocio } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const cargar = async () => {
     try {
-      const data = await obtenerItemsNegocio(ID_NEGOCIO_ACTIVO);
+      if (!idNegocio) return;
+      const data = await obtenerItemsNegocio(idNegocio);
       setItems(data);
     } catch (e) {
       console.error('Items:', e.message);
@@ -35,7 +37,7 @@ export default function ItemsNegocioScreen({ navigation }) {
   useEffect(() => {
     setLoading(true);
     cargar();
-  }, []);
+  }, [idNegocio]);
 
   return (
     <SafeAreaView style={styles.container}>

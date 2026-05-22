@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors, spacing, radii, typography, shadows, MIN_TOUCH_TARGET } from '../theme';
 
 const MODULOS = [
   { key: 'Cliente', label: 'Cliente', icono: '👤', screen: null },
@@ -35,6 +35,8 @@ export default function ModuloQuickNav({ navigation, active }) {
               key={mod.key}
               onPress={() => ir(mod)}
               style={[styles.chip, isActive && styles.chipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
             >
               <Text style={styles.chipIcon}>{mod.icono}</Text>
               <Text style={[styles.chipText, isActive && styles.chipTextActive]}>{mod.label}</Text>
@@ -47,32 +49,35 @@ export default function ModuloQuickNav({ navigation, active }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 8, marginBottom: 4 },
+  wrap: { marginVertical: spacing.md },
   label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textMuted,
-    marginBottom: 10,
+    ...typography.label,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: spacing.sm,
   },
-  row: { gap: 10, paddingRight: 8 },
+  row: { gap: spacing.sm, paddingRight: spacing.sm },
   chip: {
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 72,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
+    minHeight: MIN_TOUCH_TARGET + 16,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.lg,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.card,
   },
   chipActive: {
     backgroundColor: colors.primaryLight,
     borderColor: colors.primary,
   },
   chipIcon: { fontSize: 18, marginBottom: 4 },
-  chipText: { fontSize: 11, fontWeight: '600', color: colors.textMuted },
+  chipText: {
+    ...typography.caption,
+    fontWeight: '600',
+  },
   chipTextActive: { color: colors.primary },
 });

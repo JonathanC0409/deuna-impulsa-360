@@ -13,12 +13,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
 import { colors } from '../../theme/colors';
-import { ID_NEGOCIO_ACTIVO } from '../../constants/negocioActivo';
+import { useAuth } from '../../context/AuthContext';
 import { crearItemNegocio } from '../../services/itemService';
 
 const TIPOS_ITEM = ['Producto', 'Servicio', 'Combo', 'Paquete'];
 
 export default function CrearItemScreen({ navigation }) {
+  const { idNegocio } = useAuth();
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipoItem, setTipoItem] = useState('Producto');
@@ -34,10 +35,15 @@ export default function CrearItemScreen({ navigation }) {
       return;
     }
 
+    if (!idNegocio) {
+      Alert.alert('Sesión', 'No hay negocio vinculado.');
+      return;
+    }
+
     setLoading(true);
     try {
       await crearItemNegocio({
-        IdNegocio: ID_NEGOCIO_ACTIVO,
+        IdNegocio: idNegocio,
         Nombre: nombre.trim(),
         Descripcion: descripcion.trim() || null,
         TipoItem: tipoItem,

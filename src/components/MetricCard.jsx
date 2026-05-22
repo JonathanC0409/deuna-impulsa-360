@@ -1,6 +1,6 @@
 import { Text, StyleSheet } from 'react-native';
 import DeunaCard from './DeunaCard';
-import { colors } from '../theme/colors';
+import { colors, typography } from '../theme';
 
 export default function MetricCard({ label, value, subtitle, accent = colors.primary, style }) {
   return (
@@ -18,17 +18,14 @@ const styles = StyleSheet.create({
     minWidth: 140,
   },
   label: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginBottom: 4,
+    ...typography.label,
   },
   value: {
-    fontSize: 26,
-    fontWeight: '700',
+    ...typography.amountSm,
+    marginTop: 4,
   },
   subtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
+    ...typography.caption,
     marginTop: 4,
   },
 });

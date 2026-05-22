@@ -1,80 +1,164 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, radii } from '../../components/cliente/clienteTheme';
+import ScreenContainer from '../../components/ScreenContainer';
+import TabSegment from '../../components/cliente/TabSegment';
+import ListRow from '../../components/cliente/ListRow';
+import {
+  colors,
+  spacing,
+  radii,
+  typography,
+  shadows,
+} from '../../components/cliente/clienteTheme';
 import {
   MOCK_CLIENTE,
   MOCK_BENEFICIOS_DESBLOQUEADOS,
   MOCK_BENEFICIOS_PROXIMOS,
 } from '../../components/cliente/mockClienteData';
 
-const ICON_MAP = {
-  cash: 'cash-outline',
-  gift: 'gift-outline',
-  'trending-up': 'trending-up-outline',
-  car: 'car-outline',
-};
+const NIVELES = [
+  { key: 'bronce', label: '0', activo: true },
+  { key: 'plata', label: '5' },
+  { key: 'oro', label: '11' },
+  { key: 'morado', label: '20+' },
+];
 
-function BeneficioRow({ item, locked = false }) {
-  const iconName = ICON_MAP[item.icono] ?? 'star-outline';
-
+function BeneficioRow({ item, locked = false, onPress }) {
   return (
-    <View style={[styles.beneficioCard, locked && styles.beneficioLocked]}>
-      <View style={[styles.beneficioIcon, locked && styles.beneficioIconLocked]}>
-        <Ionicons
-          name={iconName}
-          size={22}
-          color={locked ? colors.textMuted : colors.primary}
-        />
-      </View>
-      <View style={styles.beneficioBody}>
-        <Text style={[styles.beneficioTitulo, locked && styles.textMuted]}>{item.titulo}</Text>
-        <Text style={styles.beneficioDesc}>{item.descripcion}</Text>
-        {item.nivel ? (
-          <Text style={styles.nivelTag}>Nivel {item.nivel}</Text>
-        ) : null}
-      </View>
-      {locked ? (
-        <Ionicons name="lock-closed" size={18} color={colors.textMuted} />
-      ) : (
-        <Ionicons name="checkmark-circle" size={22} color={colors.cashback} />
-      )}
-    </View>
+    <ListRow
+      icon={item.iconName ?? 'star-outline'}
+      title={item.titulo}
+      subtitle={item.descripcion}
+      locked={locked}
+      onPress={onPress}
+    />
   );
 }
 
-export default function BeneficiosScreen() {
+export default function BeneficiosScreen({ navigation }) {
+  const [tab, setTab] = useState('club');
   const progreso = MOCK_CLIENTE.nivelProgreso;
   const porcentaje = Math.round(progreso * 100);
 
+  const irPromociones = () => {
+    navigation.getParent()?.navigate('Promociones');
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.nivelCard}>
-          <View style={styles.nivelHeader}>
-            <Text style={styles.nivelLabel}>Tu nivel</Text>
-            <View style={styles.nivelBadge}>
-              <Ionicons name="medal" size={16} color={colors.white} />
-              <Text style={styles.nivelNombre}>{MOCK_CLIENTE.nivel}</Text>
-            </View>
-          </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${porcentaje}%` }]} />
-          </View>
-          <Text style={styles.progressText}>
-            {MOCK_CLIENTE.puntosActuales} / {MOCK_CLIENTE.puntosMeta} pts para Plata ({porcentaje}%)
-          </Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenContainer style={styles.inner}>
+          <TabSegment
+            tabs={[
+              { key: 'club', label: 'Club Deuna' },
+              { key: 'promos', label: 'Promociones' },
+            ]}
+            activeKey={tab}
+            onChange={(key) => {
+              if (key === 'promos') {
+                irPromociones();
+                return;
+              }
+              setTab(key);
+            }}
+          />
 
-        <Text style={styles.section}>Beneficios desbloqueados</Text>
-        {MOCK_BENEFICIOS_DESBLOQUEADOS.map((item) => (
-          <BeneficioRow key={item.id} item={item} />
-        ))}
+          {tab === 'club' ? (
+            <>
+              <View style={styles.nivelCard}>
+                <View style={styles.nivelTop}>
+                  <View style={styles.hexBadge}>
+                    <Text style={styles.hexText}>d!</Text>
+                  </View>
+                  <View style={styles.nivelInfo}>
+                    <View style={styles.nivelTitleRow}>
+                      <Text style={styles.nivelNombre}>Nivel {MOCK_CLIENTE.nivel}</Text>
+                      <Ionicons name="help-circle-outline" size={20} color={colors.textMuted} />
+                    </View>
+                    <Text style={styles.nivelDesc}>
+                      Completa los pagos necesarios y sube tu nivel. Se actualizará a inicios del
+                      próximo mes.
+                    </Text>
+                  </View>
+                </View>
 
-        <Text style={[styles.section, styles.sectionSpaced]}>Próximos beneficios</Text>
-        {MOCK_BENEFICIOS_PROXIMOS.map((item) => (
-          <BeneficioRow key={item.id} item={item} locked />
-        ))}
+                <Text style={styles.pagosText}>
+                  Este mes completaste{' '}
+                  <Text style={styles.pagosBold}>{MOCK_CLIENTE.pagosMes} pagos</Text>
+                </Text>
+                <View style={styles.progressTrack}>
+                  <View style={[styles.progressFill, { width: `${porcentaje}%` }]} />
+                </View>
+                <View style={styles.milestones}>
+                  {NIVELES.map((n) => (
+                    <View key={n.key} style={styles.milestone}>
+                      <View
+                        style={[
+                          styles.milestoneHex,
+                          n.activo && styles.milestoneHexActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.milestoneHexText,
+                            n.activo && styles.milestoneHexTextActive,
+                          ]}
+                        >
+                          ★
+                        </Text>
+                      </View>
+                      <Text style={styles.milestoneLabel}>{n.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <Pressable style={styles.linkRow} onPress={() => {}}>
+                <Text style={styles.linkText}>¿Cómo funciona el Club Deuna?</Text>
+                <Ionicons name="open-outline" size={16} color={colors.link} />
+              </Pressable>
+
+              <Text style={styles.section}>
+                Mis beneficios de Nivel {MOCK_CLIENTE.nivel}
+              </Text>
+              <View style={styles.listCard}>
+                {MOCK_BENEFICIOS_DESBLOQUEADOS.map((item, index) => (
+                  <View key={item.id}>
+                    <BeneficioRow
+                      item={item}
+                      onPress={
+                        item.titulo.includes('Gira')
+                          ? () => navigation.getParent()?.navigate('Ruleta')
+                          : item.titulo.includes('promociones')
+                            ? irPromociones
+                            : undefined
+                      }
+                    />
+                    {index < MOCK_BENEFICIOS_DESBLOQUEADOS.length - 1 ? (
+                      <View style={styles.separator} />
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+
+              <Text style={[styles.section, styles.sectionSpaced]}>
+                Beneficios de los siguientes niveles
+              </Text>
+              <View style={styles.listCard}>
+                {MOCK_BENEFICIOS_PROXIMOS.map((item, index) => (
+                  <View key={item.id}>
+                    <BeneficioRow item={item} locked />
+                    {index < MOCK_BENEFICIOS_PROXIMOS.length - 1 ? (
+                      <View style={styles.separator} />
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
+        </ScreenContainer>
       </ScrollView>
     </SafeAreaView>
   );
@@ -83,116 +167,141 @@ export default function BeneficiosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundAlt,
   },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: 32,
+  scroll: {
+    paddingBottom: spacing.xxxl,
+  },
+  inner: {
+    paddingTop: spacing.sm,
   },
   nivelCard: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.white,
     borderRadius: radii.lg,
-    padding: 18,
-    marginBottom: spacing.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+    ...shadows.card,
   },
-  nivelHeader: {
+  nivelTop: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  hexBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.md,
+    backgroundColor: '#CD7F32',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hexText: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: colors.white,
+  },
+  nivelInfo: {
+    flex: 1,
+  },
+  nivelTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
-  },
-  nivelLabel: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  nivelBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.full,
   },
   nivelNombre: {
-    fontSize: 14,
+    ...typography.h2,
+    fontSize: 16,
+  },
+  nivelDesc: {
+    ...typography.caption,
+    marginTop: 6,
+    lineHeight: 18,
+  },
+  pagosText: {
+    ...typography.body,
+    marginBottom: spacing.sm,
+  },
+  pagosBold: {
     fontWeight: '800',
-    color: colors.white,
+    color: colors.primary,
   },
   progressTrack: {
-    height: 10,
-    backgroundColor: colors.white,
-    borderRadius: 5,
+    height: 8,
+    backgroundColor: colors.surface,
+    borderRadius: 4,
     overflow: 'hidden',
+    marginBottom: spacing.md,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.cashback,
-    borderRadius: 5,
+    backgroundColor: colors.primary,
+    borderRadius: 4,
   },
-  progressText: {
+  milestones: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  milestone: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  milestoneHex: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  milestoneHexActive: {
+    backgroundColor: colors.primaryLight,
+  },
+  milestoneHexText: {
     fontSize: 12,
     color: colors.textMuted,
-    marginTop: 10,
+  },
+  milestoneHexTextActive: {
+    color: colors.primary,
+  },
+  milestoneLabel: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: '600',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.xl,
+  },
+  linkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.link,
+    textDecorationLine: 'underline',
   },
   section: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
+    ...typography.h2,
     marginBottom: spacing.md,
   },
   sectionSpaced: {
     marginTop: spacing.md,
   },
-  beneficioCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  listCard: {
     backgroundColor: colors.white,
     borderRadius: radii.lg,
-    padding: 14,
-    marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    gap: 12,
+    overflow: 'hidden',
+    marginBottom: spacing.lg,
+    ...shadows.card,
   },
-  beneficioLocked: {
-    opacity: 0.85,
-    backgroundColor: colors.surface,
-  },
-  beneficioIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radii.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  beneficioIconLocked: {
-    backgroundColor: colors.border,
-  },
-  beneficioBody: {
-    flex: 1,
-  },
-  beneficioTitulo: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  textMuted: {
-    color: colors.textMuted,
-  },
-  beneficioDesc: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  nivelTag: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primary,
-    marginTop: 6,
+  separator: {
+    height: 1,
+    backgroundColor: colors.divider,
+    marginLeft: 56,
   },
 });

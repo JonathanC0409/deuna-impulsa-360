@@ -1,8 +1,9 @@
-import { Text } from 'react-native';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { colors } from '../theme/colors';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, typography, shadows } from '../theme';
 
 import InicioClienteScreen from '../screens/cliente/InicioClienteScreen';
 import PagoExitosoScreen from '../screens/cliente/PagoExitosoScreen';
@@ -28,49 +29,103 @@ const NegocioStack = createNativeStackNavigator();
 const RuletaStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const headerOptions = {
-  headerStyle: { backgroundColor: colors.primary },
-  headerTintColor: colors.white,
-  headerTitleStyle: { fontWeight: '700' },
+const stackHeaderOptions = {
+  headerStyle: { backgroundColor: colors.white },
+  headerTintColor: colors.primary,
+  headerTitleStyle: {
+    ...typography.h2,
+    fontSize: 17,
+    color: colors.text,
+  },
+  headerShadowVisible: true,
   headerBackTitleVisible: false,
 };
 
-const tabIcon = (emoji) => () => <Text style={{ fontSize: 20 }}>{emoji}</Text>;
+const purpleHeaderOptions = {
+  headerStyle: { backgroundColor: colors.primary },
+  headerTintColor: colors.white,
+  headerTitleStyle: {
+    ...typography.h2,
+    fontSize: 17,
+    color: colors.white,
+  },
+  headerBackTitleVisible: false,
+};
+
+const TAB_ICONS = {
+  Inicio: { active: 'home', inactive: 'home-outline' },
+  Beneficios: { active: 'gift', inactive: 'gift-outline' },
+  Billetera: { active: 'wallet', inactive: 'wallet-outline' },
+  Tu: { active: 'person-circle', inactive: 'person-circle-outline' },
+};
+
+function tabBarIcon(routeName, focused) {
+  const pair = TAB_ICONS[routeName] ?? TAB_ICONS.Inicio;
+  const iconName = focused ? pair.active : pair.inactive;
+  return (
+    <Ionicons name={iconName} size={24} color={focused ? colors.primary : colors.tabInactive} />
+  );
+}
 
 function ClienteTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarLabelStyle: typography.tab,
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
+          borderTopWidth: 1,
+          height: Platform.OS === 'ios' ? 84 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingTop: 8,
+          ...shadows.tabBar,
         },
-        ...headerOptions,
+        headerStyle: { backgroundColor: colors.white },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          ...typography.h2,
+          fontSize: 17,
+        },
+        headerTitleAlign: 'center',
+        headerShadowVisible: false,
       }}
     >
       <Tab.Screen
         name="Inicio"
         component={InicioClienteScreen}
-        options={{ title: 'Inicio', tabBarLabel: 'Inicio', tabBarIcon: tabIcon('🏠') }}
+        options={{
+          headerShown: false,
+          tabBarLabel: 'Inicio',
+          tabBarIcon: ({ focused }) => tabBarIcon('Inicio', focused),
+        }}
       />
       <Tab.Screen
         name="Beneficios"
         component={BeneficiosScreen}
-        options={{ title: 'Beneficios', tabBarIcon: tabIcon('🎁') }}
+        options={{
+          title: 'Beneficios',
+          tabBarIcon: ({ focused }) => tabBarIcon('Beneficios', focused),
+        }}
       />
       <Tab.Screen
         name="Billetera"
         component={BilleteraScreen}
-        options={{ title: 'Billetera', tabBarIcon: tabIcon('💳') }}
+        options={{
+          title: 'Billetera',
+          tabBarIcon: ({ focused }) => tabBarIcon('Billetera', focused),
+        }}
       />
       <Tab.Screen
         name="Tu"
         component={PerfilClienteScreen}
-        options={{ title: 'Tú', tabBarLabel: 'Tú', tabBarIcon: tabIcon('👤') }}
+        options={{
+          headerShown: false,
+          tabBarLabel: 'Tú',
+          tabBarIcon: ({ focused }) => tabBarIcon('Tu', focused),
+        }}
       />
     </Tab.Navigator>
   );
@@ -78,7 +133,7 @@ function ClienteTabs() {
 
 function ClienteNavigator() {
   return (
-    <ClienteStack.Navigator screenOptions={headerOptions}>
+    <ClienteStack.Navigator screenOptions={stackHeaderOptions}>
       <ClienteStack.Screen
         name="ClienteTabs"
         component={ClienteTabs}
@@ -87,7 +142,7 @@ function ClienteNavigator() {
       <ClienteStack.Screen
         name="PagoExitoso"
         component={PagoExitosoScreen}
-        options={{ title: 'Pago exitoso' }}
+        options={{ title: 'Pago exitoso', ...purpleHeaderOptions }}
       />
       <ClienteStack.Screen
         name="MisRecompensas"
@@ -100,7 +155,7 @@ function ClienteNavigator() {
 
 function NegocioNavigator() {
   return (
-    <NegocioStack.Navigator screenOptions={headerOptions}>
+    <NegocioStack.Navigator screenOptions={purpleHeaderOptions}>
       <NegocioStack.Screen
         name="DashboardNegocio"
         component={DashboardNegocioScreen}
@@ -127,7 +182,7 @@ function NegocioNavigator() {
 
 function RuletaNavigator() {
   return (
-    <RuletaStack.Navigator screenOptions={headerOptions}>
+    <RuletaStack.Navigator screenOptions={purpleHeaderOptions}>
       <RuletaStack.Screen name="Ruleta" component={RuletaScreen} options={{ title: 'Ruleta' }} />
       <RuletaStack.Screen
         name="ResultadoRecompensa"
@@ -141,7 +196,7 @@ function RuletaNavigator() {
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <RootStack.Navigator screenOptions={headerOptions}>
+      <RootStack.Navigator screenOptions={stackHeaderOptions}>
         <RootStack.Screen
           name="Cliente"
           component={ClienteNavigator}

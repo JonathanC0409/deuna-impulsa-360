@@ -7,58 +7,46 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import DeunaButton from '../../components/DeunaButton';
-import DeunaCard from '../../components/DeunaCard';
+import ScreenContainer from '../../components/ScreenContainer';
+import RuletaWheel from '../../components/ruleta/RuletaWheel';
+import { colors, spacing, radii, typography, shadows } from '../../theme';
 import {
   PREMIOS,
   contarComprasUsuarioEnNegocio,
   crearGiro,
   determinarNivelGiro,
   ejecutarGiro,
+  seleccionarPremio,
   ventaTieneGiro,
 } from '../../services/ruletaService';
 
-const COLORS = {
-  background: '#F8F7FF',
-  primary: '#7C3AED',
-  cashback: '#00C896',
-  text: '#1E1E1E',
-  textMuted: '#6F6F7A',
-  white: '#FFFFFF',
-};
-
-const SEGMENT_COLORS = ['#7C3AED', '#A78BFA', '#00C896', '#FBBF24', '#F472B6', '#60A5FA'];
-
-const SPIN_DURATION_MS = 3200;
-const MIN_SPINS = 4;
+const SPIN_DURATION_MS = 4000;
+const MIN_SPINS = 5;
 
 const NIVEL_LABELS = {
-  1: 'Giro básico',
-  2: 'Giro mejorado',
-  3: 'Giro especial',
-  4: 'Giro premium',
+  1: { label: 'Giro básico', desc: 'Compra desde $1', color: colors.primaryLight },
+  2: { label: 'Giro mejorado', desc: 'Compra desde $5', color: '#E0F7F1' },
+  3: { label: 'Giro especial', desc: '5.ª compra en el negocio', color: colors.primaryLight },
+  4: { label: 'Giro premium', desc: 'Horario promocional', color: '#FFF8E6' },
 };
 
 function validarParams(params) {
   const requeridos = [
-    ['ventaId', 'ID de venta'],
-    ['usuarioId', 'ID de usuario'],
-    ['negocioId', 'ID de negocio'],
-    ['montoVenta', 'monto de la venta'],
-    ['nombreNegocio', 'nombre del negocio'],
+    ['ventaId', 'venta'],
+    ['usuarioId', 'usuario'],
+    ['negocioId', 'negocio'],
+    ['montoVenta', 'monto'],
   ];
 
   const faltantes = requeridos.filter(([key]) => params?.[key] == null || params?.[key] === '');
   if (faltantes.length > 0) {
-    return `Faltan datos para la ruleta: ${faltantes.map(([, label]) => label).join(', ')}.`;
+    return 'Faltan datos para girar. Vuelve desde el pago exitoso.';
   }
-
-  if (Number.isNaN(Number(params.montoVenta))) {
-    return 'El monto de la venta no es válido.';
-  }
-
   return null;
 }
 
@@ -69,7 +57,7 @@ export default function RuletaScreen({ navigation, route }) {
     usuarioId,
     negocioId,
     montoVenta,
-    nombreNegocio,
+    nombreNegocio = 'Negocio aliado',
     esHorarioPromocional = false,
   } = params;
 
@@ -78,16 +66,17 @@ export default function RuletaScreen({ navigation, route }) {
   const [giroId, setGiroId] = useState(null);
   const [nivelGiro, setNivelGiro] = useState(0);
   const [puedeGirar, setPuedeGirar] = useState(false);
-  const [mensajeEstado, setMensajeEstado] = useState('');
+  const [yaUsado, setYaUsado] = useState(false);
 
   const rotacion = useRef(new Animated.Value(0)).current;
-  const rotacionActual = useRef(0);
+  const rotacionAcumulada = useRef(0);
 
-  const mostrarError = useCallback((titulo, mensaje) => {
-    Alert.alert(titulo, mensaje, [
-      { text: 'Volver', onPress: () => navigation.goBack() },
-    ]);
-  }, [navigation]);
+  const mostrarError = useCallback(
+    (titulo, mensaje) => {
+      Alert.alert(titulo, mensaje, [{ text: 'Volver', onPress: () => navigation.goBack() }]);
+    },
+    [navigation]
+  );
 
   const inicializarGiro = useCallback(async () => {
     const errorParams = validarParams(params);
@@ -98,60 +87,42 @@ export default function RuletaScreen({ navigation, route }) {
 
     try {
       setCargando(true);
-
       const giroExistente = await ventaTieneGiro(ventaId);
 
       if (giroExistente) {
-        setGiroId(giroExistente.id);
-        setNivelGiro(giroExistente.nivel);
-
-        if (giroExistente.usado) {
-          setPuedeGirar(false);
-          setMensajeEstado('Este giro ya fue utilizado para esta venta.');
-          Alert.alert(
-            'Giro ya usado',
-            'Ya giraste la ruleta con esta compra. Revisa tus recompensas.',
-          );
-          return;
-        }
-
-        setPuedeGirar(true);
-        setMensajeEstado(`${NIVEL_LABELS[giroExistente.nivel] ?? 'Giro'} — ¡presiona para girar!`);
+        setGiroId(giroExistente.IdGiroRuleta);
+        setNivelGiro(giroExistente.Nivel);
+        setYaUsado(Boolean(giroExistente.Usado));
+        setPuedeGirar(!giroExistente.Usado);
         return;
       }
 
-      const comprasEnNegocio = await contarComprasUsuarioEnNegocio(usuarioId, negocioId);
+      const compras = await contarComprasUsuarioEnNegocio(usuarioId, negocioId);
       const nivel = determinarNivelGiro(
         Number(montoVenta),
-        comprasEnNegocio,
-        Boolean(esHorarioPromocional),
+        compras,
+        Boolean(esHorarioPromocional)
       );
 
       if (nivel === 0) {
-        mostrarError(
-          'Sin giro disponible',
-          'La compra debe ser de al menos $1 para obtener un giro en la ruleta.',
-        );
+        mostrarError('Sin giro', 'La compra debe ser de al menos $1.');
         return;
       }
 
-      const nuevoGiro = await crearGiro({
-        ventaId,
-        usuarioId,
-        negocioId,
+      const nuevo = await crearGiro({
+        idVenta: ventaId,
+        idCliente: usuarioId,
         nivelGiro: nivel,
+        montoCompra: Number(montoVenta),
       });
 
-      setGiroId(nuevoGiro.id);
+      setGiroId(nuevo.IdGiroRuleta);
       setNivelGiro(nivel);
       setPuedeGirar(true);
-      setMensajeEstado(`${NIVEL_LABELS[nivel] ?? 'Giro'} — ¡presiona para girar!`);
+      setYaUsado(false);
     } catch (error) {
-      console.error('RuletaScreen init:', error);
-      mostrarError(
-        'Error de conexión',
-        error?.message ?? 'No pudimos preparar tu giro. Intenta de nuevo más tarde.',
-      );
+      console.error('Ruleta init:', error);
+      mostrarError('Error', error?.message ?? 'No se pudo cargar la ruleta.');
     } finally {
       setCargando(false);
     }
@@ -161,12 +132,12 @@ export default function RuletaScreen({ navigation, route }) {
     inicializarGiro();
   }, [inicializarGiro]);
 
-  const animarRuleta = (indicePremio) =>
+  const animarHastaPremio = (indicePremio) =>
     new Promise((resolve) => {
-      const gradosPorSegmento = 360 / PREMIOS.length;
-      const centroSegmento = indicePremio * gradosPorSegmento + gradosPorSegmento / 2;
-      const destino = MIN_SPINS * 360 + (360 - centroSegmento);
-      const valorFinal = rotacionActual.current + destino;
+      const gradosSegmento = 360 / PREMIOS.length;
+      const centro = indicePremio * gradosSegmento + gradosSegmento / 2;
+      const destino = MIN_SPINS * 360 + (360 - centro);
+      const valorFinal = rotacionAcumulada.current + destino;
 
       Animated.timing(rotacion, {
         toValue: valorFinal,
@@ -174,257 +145,173 @@ export default function RuletaScreen({ navigation, route }) {
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start(({ finished }) => {
-        if (finished) {
-          rotacionActual.current = valorFinal % 360;
-        }
+        if (finished) rotacionAcumulada.current = valorFinal;
         resolve();
       });
     });
 
+  const rotacionInterpolada = rotacion.interpolate({
+    inputRange: [0, 10000],
+    outputRange: ['0deg', '10000deg'],
+    extrapolate: 'extend',
+  });
+
   const handleGirar = async () => {
-    if (!puedeGirar || girando || !giroId) return;
+    if (!puedeGirar || girando || !giroId || yaUsado) return;
 
     setGirando(true);
     setPuedeGirar(false);
 
     try {
-      const indiceAnimacion = Math.floor(Math.random() * PREMIOS.length);
-      await animarRuleta(indiceAnimacion);
+      const premioElegido = seleccionarPremio(nivelGiro);
+      const indice = PREMIOS.findIndex((p) => p.id === premioElegido.id);
+      await animarHastaPremio(indice >= 0 ? indice : 0);
 
       const { premio, recompensa } = await ejecutarGiro({
-        giroId,
-        usuarioId,
-        negocioId,
+        idGiroRuleta: giroId,
+        idCliente: usuarioId,
         nivelGiro,
+        premioPreseleccionado: premioElegido,
       });
 
-      navigation.replace('ResultadoRecompensa', {
-        premio,
-        recompensa,
-        nombreNegocio,
-        nivelGiro,
-      });
+      setTimeout(() => {
+        navigation.replace('ResultadoRecompensa', {
+          premio: premio ?? premioElegido,
+          recompensa,
+          nombreNegocio,
+          nivelGiro,
+        });
+      }, 400);
     } catch (error) {
-      console.error('RuletaScreen girar:', error);
+      console.error('Girar:', error);
       setPuedeGirar(true);
-      Alert.alert(
-        'No se pudo completar el giro',
-        error?.message ?? 'Ocurrió un error al guardar tu premio. Intenta de nuevo.',
-      );
+      Alert.alert('Error', error?.message ?? 'No se pudo guardar tu premio.');
     } finally {
       setGirando(false);
     }
   };
 
-  const rotacionInterpolada = rotacion.interpolate({
-    inputRange: [0, 3600],
-    outputRange: ['0deg', '3600deg'],
-    extrapolate: 'extend',
-  });
+  const nivelInfo = NIVEL_LABELS[nivelGiro];
 
   if (cargando) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.safe}>
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Preparando tu giro...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Preparando tu ruleta...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.tituloPantalla}>¡Gira y gana!</Text>
-        <Text style={styles.subtitulo}>{nombreNegocio}</Text>
-
-        <DeunaCard style={styles.wheelCard}>
-          <View style={styles.pointerWrap}>
-            <View style={styles.pointer} />
+    <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenContainer>
+          <View style={styles.hero}>
+            <Text style={styles.heroTitle}>¡Gira y gana!</Text>
+            <Text style={styles.heroSub}>Siempre ganas un premio · {nombreNegocio}</Text>
           </View>
 
-          <Animated.View
-            style={[styles.wheel, { transform: [{ rotate: rotacionInterpolada }] }]}
-          >
-            {PREMIOS.map((premio, index) => {
-              const angle = (360 / PREMIOS.length) * index;
-              return (
-                <View
-                  key={premio.id}
-                  style={[
-                    styles.segment,
-                    {
-                      backgroundColor: SEGMENT_COLORS[index % SEGMENT_COLORS.length],
-                      transform: [{ rotate: `${angle}deg` }],
-                    },
-                  ]}
-                >
-                  <Text style={styles.segmentText} numberOfLines={2}>
-                    {premio.label.split(' ')[0]}
-                  </Text>
-                </View>
-              );
-            })}
-            <View style={styles.wheelCenter}>
-              <Text style={styles.wheelCenterEmoji}>🎡</Text>
+          {nivelInfo ? (
+            <View style={[styles.nivelCard, { backgroundColor: nivelInfo.color }]}>
+              <Ionicons name="sparkles" size={20} color={colors.primary} />
+              <View style={styles.nivelTextCol}>
+                <Text style={styles.nivelTitle}>{nivelInfo.label}</Text>
+                <Text style={styles.nivelDesc}>{nivelInfo.desc}</Text>
+              </View>
             </View>
-          </Animated.View>
-        </DeunaCard>
+          ) : null}
 
-        {nivelGiro > 0 && (
-          <View style={styles.nivelBadge}>
-            <Text style={styles.nivelBadgeText}>
-              {NIVEL_LABELS[nivelGiro] ?? `Nivel ${nivelGiro}`}
+          <View style={styles.wheelBox}>
+            <RuletaWheel rotation={rotacionInterpolada} size={280} />
+          </View>
+
+          <View style={styles.garantia}>
+            <Ionicons name="shield-checkmark" size={18} color={colors.cashback} />
+            <Text style={styles.garantiaText}>
+              Sin opción de perder — cashback o descuento en menos de 24 h
             </Text>
           </View>
-        )}
 
-        {mensajeEstado ? <Text style={styles.hint}>{mensajeEstado}</Text> : null}
+          {yaUsado ? (
+            <View style={styles.usadoBox}>
+              <Text style={styles.usadoText}>Este giro ya fue utilizado</Text>
+              <DeunaButton
+                title="Ver mis recompensas"
+                variant="outline"
+                onPress={() => navigation.navigate?.('MisRecompensas') ?? navigation.goBack()}
+                style={styles.btn}
+              />
+            </View>
+          ) : (
+            <DeunaButton
+              title={girando ? 'Girando...' : 'Girar ruleta'}
+              variant="cashback"
+              onPress={handleGirar}
+              disabled={!puedeGirar || girando}
+              loading={girando}
+              style={styles.btn}
+            />
+          )}
 
-        <DeunaButton
-          title={girando ? 'Girando...' : 'Girar ruleta'}
-          variant="cashback"
-          onPress={handleGirar}
-          disabled={!puedeGirar || girando}
-          loading={girando}
-          style={styles.btnGirar}
-        />
-      </View>
+          <DeunaButton title="Volver" variant="outline" onPress={() => navigation.goBack()} />
+        </ScreenContainer>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-const WHEEL_SIZE = 280;
-
 const styles = StyleSheet.create({
-  container: {
+  safe: { flex: 1, backgroundColor: colors.backgroundAlt },
+  scroll: { paddingBottom: spacing.xxxl, paddingTop: spacing.md },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: spacing.md },
+  loadingText: { ...typography.body },
+  hero: { alignItems: 'center', marginBottom: spacing.lg },
+  heroTitle: { ...typography.h1, color: colors.primary },
+  heroSub: { ...typography.caption, marginTop: spacing.xs, textAlign: 'center' },
+  nivelCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radii.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  nivelTextCol: { flex: 1 },
+  nivelTitle: { ...typography.bodyBold, color: colors.primary },
+  nivelDesc: { ...typography.caption, marginTop: 2 },
+  wheelBox: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    marginBottom: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    ...shadows.cardElevated,
+  },
+  garantia: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: '#E6FBF5',
+    padding: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.lg,
+  },
+  garantiaText: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.cashbackDark,
+    lineHeight: 18,
   },
-  content: {
-    flex: 1,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: COLORS.textMuted,
-    marginTop: 12,
-  },
-  tituloPantalla: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: COLORS.primary,
-    marginBottom: 4,
-  },
-  subtitulo: {
-    fontSize: 15,
-    color: COLORS.textMuted,
-    marginBottom: 20,
-  },
-  wheelCard: {
-    alignItems: 'center',
-    paddingVertical: 28,
-    paddingHorizontal: 16,
-    borderRadius: 24,
-    marginBottom: 16,
-    width: '100%',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  pointerWrap: {
-    position: 'absolute',
-    top: 18,
-    zIndex: 10,
-    alignSelf: 'center',
-  },
-  pointer: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 12,
-    borderRightWidth: 12,
-    borderBottomWidth: 22,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: COLORS.primary,
-  },
-  wheel: {
-    width: WHEEL_SIZE,
-    height: WHEEL_SIZE,
-    borderRadius: WHEEL_SIZE / 2,
-    overflow: 'hidden',
-    borderWidth: 6,
-    borderColor: COLORS.white,
-  },
-  segment: {
-    position: 'absolute',
-    width: '50%',
-    height: '50%',
-    left: '50%',
-    top: 0,
-    transformOrigin: 'left bottom',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 24,
-    paddingHorizontal: 4,
-  },
-  segmentText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: COLORS.white,
+  btn: { marginBottom: spacing.md },
+  usadoBox: { marginBottom: spacing.md },
+  usadoText: {
     textAlign: 'center',
-    width: 56,
-    transform: [{ rotate: '90deg' }],
-  },
-  wheelCenter: {
-    position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: COLORS.white,
-    top: WHEEL_SIZE / 2 - 32,
-    left: WHEEL_SIZE / 2 - 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: COLORS.primary,
-    zIndex: 5,
-  },
-  wheelCenterEmoji: {
-    fontSize: 28,
-  },
-  nivelBadge: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 12,
-  },
-  nivelBadgeText: {
-    color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  hint: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 8,
-  },
-  btnGirar: {
-    width: '100%',
-    borderRadius: 18,
+    ...typography.body,
+    marginBottom: spacing.md,
   },
 });

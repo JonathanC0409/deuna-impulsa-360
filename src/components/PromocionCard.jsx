@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import DeunaCard from './DeunaCard';
 import DeunaButton from './DeunaButton';
-import { colors } from '../theme/colors';
+import { colors, spacing, radii, typography } from '../theme';
 
 const TIPO_LABEL = {
   giro: { label: 'Giro', color: colors.primary },
@@ -61,7 +61,7 @@ export default function PromocionCard({ promocion, onToggleActiva, onActivarVisu
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: 14 },
+  card: { marginBottom: spacing.md },
   destacada: {
     borderColor: colors.primary,
     borderWidth: 2,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
   },
-  titulo: { fontSize: 18, fontWeight: '800', color: colors.text, lineHeight: 24 },
+  titulo: { ...typography.h2, fontSize: 17, lineHeight: 24 },
   negocio: { fontSize: 13, color: colors.primary, fontWeight: '600', marginTop: 4 },
   desc: { fontSize: 14, color: colors.textMuted, marginTop: 8, lineHeight: 20 },
   beneficioBox: {

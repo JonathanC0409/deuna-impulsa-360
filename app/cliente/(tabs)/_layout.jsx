@@ -19,7 +19,10 @@ export default function ClienteTabsLayout() {
       <Tabs.Screen name="inicio" options={{ title: 'Inicio', tabBarLabel: 'Inicio' }} />
       <Tabs.Screen name="beneficios" options={{ title: 'Beneficios' }} />
       <Tabs.Screen name="billetera" options={{ title: 'Billetera' }} />
-      <Tabs.Screen name="tu" options={{ title: 'Tú', tabBarLabel: 'Tú' }} />
+      <Tabs.Screen
+        name="tu"
+        options={{ title: 'Tú', tabBarLabel: 'Tú', headerShown: false }}
+      />
     </Tabs>
   );
 }

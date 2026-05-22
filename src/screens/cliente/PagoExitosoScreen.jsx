@@ -1,15 +1,60 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DeunaButton from '../../components/DeunaButton';
 import CashbackCard from '../../components/cliente/CashbackCard';
 import { colors, spacing } from '../../components/cliente/clienteTheme';
 import { MOCK_PAGO } from '../../components/cliente/mockClienteData';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PagoExitosoScreen({ navigation, route }) {
-  const comercio = route?.params?.comercio ?? MOCK_PAGO.comercio;
-  const monto = route?.params?.monto ?? MOCK_PAGO.monto;
-  const cashback = route?.params?.cashback ?? MOCK_PAGO.cashbackGanado;
+  const router = useRouter();
+  const { usuario } = useAuth();
+  const comercio = route?.params?.comercio ?? route?.params?.nombreNegocio ?? MOCK_PAGO.comercio;
+  const monto = Number(route?.params?.monto ?? route?.params?.total ?? MOCK_PAGO.monto);
+  const cashback = Number(
+    route?.params?.cashback ?? route?.params?.cashbackGanado ?? monto * 0.05
+  );
+
+  const ventaId = route?.params?.ventaId ? Number(route.params.ventaId) : null;
+  const negocioId = route?.params?.negocioId ? Number(route.params.negocioId) : null;
+  const esHorarioPromocional = route?.params?.esHorarioPromocional === true
+    || route?.params?.esHorarioPromocional === 'true';
+
+  const irRuleta = () => {
+    if (!ventaId || !usuario?.IdUsuario || !negocioId) {
+      navigation.navigate('ClienteTabs');
+      return;
+    }
+
+    const ruletaParams = {
+      ventaId,
+      usuarioId: usuario.IdUsuario,
+      negocioId,
+      montoVenta: monto,
+      nombreNegocio: comercio,
+      esHorarioPromocional: String(esHorarioPromocional),
+    };
+
+    const parent = navigation.getParent?.()?.getParent?.();
+    if (parent?.navigate) {
+      parent.navigate('Ruleta', ruletaParams);
+      return;
+    }
+
+    router.push({
+      pathname: '/ruleta',
+      params: {
+        ventaId: String(ruletaParams.ventaId),
+        usuarioId: String(ruletaParams.usuarioId),
+        negocioId: String(ruletaParams.negocioId),
+        montoVenta: String(ruletaParams.montoVenta),
+        nombreNegocio: ruletaParams.nombreNegocio,
+        esHorarioPromocional: ruletaParams.esHorarioPromocional,
+      },
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -18,7 +63,7 @@ export default function PagoExitosoScreen({ navigation, route }) {
           <Ionicons name="checkmark-circle" size={72} color={colors.success} />
         </View>
         <Text style={styles.title}>¡Pago exitoso!</Text>
-        <Text style={styles.status}>Confirmado</Text>
+        <Text style={styles.status}>Confirmado con Deuna</Text>
 
         <View style={styles.detailCard}>
           <Text style={styles.merchantLabel}>Comercio</Text>
@@ -30,15 +75,22 @@ export default function PagoExitosoScreen({ navigation, route }) {
 
         <CashbackCard
           monto={cashback}
-          label="Cashback ganado en esta compra"
+          label="Cashback estimado en esta compra"
           compact
           style={styles.cashback}
         />
 
+        {ventaId ? (
+          <Text style={styles.giroHint}>
+            Tienes un giro en la ruleta. Niveles según monto, compras en el negocio y horario
+            promocional.
+          </Text>
+        ) : null}
+
         <DeunaButton
-          title="Girar ruleta"
+          title={ventaId ? 'Girar ruleta ahora' : 'Volver al inicio'}
           variant="cashback"
-          onPress={() => navigation.getParent()?.navigate('Ruleta')}
+          onPress={ventaId ? irRuleta : () => navigation.navigate('ClienteTabs')}
           style={styles.btn}
         />
         <DeunaButton
@@ -117,7 +169,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cashback: {
+    marginBottom: spacing.md,
+  },
+  giroHint: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: 'center',
     marginBottom: spacing.lg,
+    lineHeight: 18,
   },
   btn: {
     marginBottom: 12,
