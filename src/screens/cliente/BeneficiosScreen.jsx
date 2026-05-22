@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+
 import ScreenContainer from '../../components/ScreenContainer';
 import TabSegment from '../../components/cliente/TabSegment';
 import ListRow from '../../components/cliente/ListRow';
@@ -37,13 +39,17 @@ function BeneficioRow({ item, locked = false, onPress }) {
   );
 }
 
-export default function BeneficiosScreen({ navigation }) {
+export default function BeneficiosScreen() {
   const [tab, setTab] = useState('club');
   const progreso = MOCK_CLIENTE.nivelProgreso;
   const porcentaje = Math.round(progreso * 100);
 
   const irPromociones = () => {
-    navigation.getParent()?.navigate('Promociones');
+    router.push('/promociones');
+  };
+
+  const irRuleta = () => {
+    router.push('/ruleta');
   };
 
   return (
@@ -61,6 +67,7 @@ export default function BeneficiosScreen({ navigation }) {
                 irPromociones();
                 return;
               }
+
               setTab(key);
             }}
           />
@@ -72,11 +79,13 @@ export default function BeneficiosScreen({ navigation }) {
                   <View style={styles.hexBadge}>
                     <Text style={styles.hexText}>d!</Text>
                   </View>
+
                   <View style={styles.nivelInfo}>
                     <View style={styles.nivelTitleRow}>
                       <Text style={styles.nivelNombre}>Nivel {MOCK_CLIENTE.nivel}</Text>
                       <Ionicons name="help-circle-outline" size={20} color={colors.textMuted} />
                     </View>
+
                     <Text style={styles.nivelDesc}>
                       Completa los pagos necesarios y sube tu nivel. Se actualizará a inicios del
                       próximo mes.
@@ -88,9 +97,11 @@ export default function BeneficiosScreen({ navigation }) {
                   Este mes completaste{' '}
                   <Text style={styles.pagosBold}>{MOCK_CLIENTE.pagosMes} pagos</Text>
                 </Text>
+
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressFill, { width: `${porcentaje}%` }]} />
                 </View>
+
                 <View style={styles.milestones}>
                   {NIVELES.map((n) => (
                     <View key={n.key} style={styles.milestone}>
@@ -123,33 +134,41 @@ export default function BeneficiosScreen({ navigation }) {
               <Text style={styles.section}>
                 Mis beneficios de Nivel {MOCK_CLIENTE.nivel}
               </Text>
+
               <View style={styles.listCard}>
-                {MOCK_BENEFICIOS_DESBLOQUEADOS.map((item, index) => (
-                  <View key={item.id}>
-                    <BeneficioRow
-                      item={item}
-                      onPress={
-                        item.titulo.includes('Gira')
-                          ? () => navigation.getParent()?.navigate('Ruleta')
-                          : item.titulo.includes('promociones')
-                            ? irPromociones
-                            : undefined
-                      }
-                    />
-                    {index < MOCK_BENEFICIOS_DESBLOQUEADOS.length - 1 ? (
-                      <View style={styles.separator} />
-                    ) : null}
-                  </View>
-                ))}
+                {MOCK_BENEFICIOS_DESBLOQUEADOS.map((item, index) => {
+                  const titulo = String(item.titulo ?? '').toLowerCase();
+
+                  return (
+                    <View key={item.id}>
+                      <BeneficioRow
+                        item={item}
+                        onPress={
+                          titulo.includes('gira')
+                            ? irRuleta
+                            : titulo.includes('promociones') || titulo.includes('promoción')
+                              ? irPromociones
+                              : undefined
+                        }
+                      />
+
+                      {index < MOCK_BENEFICIOS_DESBLOQUEADOS.length - 1 ? (
+                        <View style={styles.separator} />
+                      ) : null}
+                    </View>
+                  );
+                })}
               </View>
 
               <Text style={[styles.section, styles.sectionSpaced]}>
                 Beneficios de los siguientes niveles
               </Text>
+
               <View style={styles.listCard}>
                 {MOCK_BENEFICIOS_PROXIMOS.map((item, index) => (
                   <View key={item.id}>
                     <BeneficioRow item={item} locked />
+
                     {index < MOCK_BENEFICIOS_PROXIMOS.length - 1 ? (
                       <View style={styles.separator} />
                     ) : null}

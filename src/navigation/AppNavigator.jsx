@@ -23,6 +23,8 @@ import ResultadoRecompensaScreen from '../screens/ruleta/ResultadoRecompensaScre
 import PromocionesScreen from '../screens/promociones/PromocionesScreen';
 import FlujoImpulsaScreen from '../screens/promociones/FlujoImpulsaScreen';
 
+import CrearPromocionScreen from '../screens/negocio/CrearPromocionScreen';
+
 const RootStack = createNativeStackNavigator();
 const ClienteStack = createNativeStackNavigator();
 const NegocioStack = createNativeStackNavigator();
@@ -154,7 +156,9 @@ function ClienteNavigator() {
 }
 
 function NegocioNavigator() {
+  
   return (
+    
     <NegocioStack.Navigator screenOptions={purpleHeaderOptions}>
       <NegocioStack.Screen
         name="DashboardNegocio"
@@ -176,6 +180,17 @@ function NegocioNavigator() {
         component={RegistrarVentaScreen}
         options={{ title: 'Registrar venta' }}
       />
+      <NegocioStack.Screen
+  name="RegistrarVenta"
+  component={RegistrarVentaScreen}
+  options={{ title: 'Registrar venta' }}
+/>
+
+<NegocioStack.Screen
+  name="CrearPromocion"
+  component={CrearPromocionScreen}
+  options={{ title: 'Crear promoción' }}
+/>
     </NegocioStack.Navigator>
   );
 }

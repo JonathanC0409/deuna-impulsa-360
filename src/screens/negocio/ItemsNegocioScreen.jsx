@@ -66,17 +66,56 @@ export default function ItemsNegocioScreen({ navigation, refreshKey }) {
   };
 
   const ejecutarEliminar = async (item) => {
+    const ejecutarEliminar = async (item) => {
+  console.log('========== CLICK ELIMINAR ==========');
+  console.log('ITEM COMPLETO:', item);
+  console.log('ID ITEM:', item.IdItemNegocio);
+  console.log('ID NEGOCIO DESDE AUTH:', idNegocio);
+  console.log('====================================');
+
+  if (!idNegocio) {
+    Alert.alert('Sesión', 'No hay negocio vinculado.');
+    return;
+  }
+
+  setEliminandoId(String(item.IdItemNegocio));
+
+  try {
+    await eliminarItemNegocio(item.IdItemNegocio, idNegocio);
+
+    setItems((prev) =>
+      prev.filter((i) => String(i.IdItemNegocio) !== String(item.IdItemNegocio))
+    );
+
+    Alert.alert('Eliminado', 'El ítem se quitó del inventario.');
+  } catch (e) {
+    console.error('[ItemsNegocioScreen] eliminar:', e);
+    Alert.alert('Error', e.message ?? 'No se pudo eliminar el ítem.');
+    await cargar(true);
+  } finally {
+    setEliminandoId(null);
+  }
+};
     if (!idNegocio) {
       Alert.alert('Sesión', 'No hay negocio vinculado.');
       return;
     }
 
-    setEliminandoId(item.IdItemNegocio);
-    try {
-      await eliminarItemNegocio(item.IdItemNegocio, idNegocio);
-      setItems((prev) => prev.filter((i) => i.IdItemNegocio !== item.IdItemNegocio));
-      Alert.alert('Eliminado', 'El ítem se quitó del inventario.');
-    } catch (e) {
+    setEliminandoId(String(item.IdItemNegocio));
+
+try {
+  console.log('[Eliminar] item:', item);
+  console.log('[Eliminar] IdItemNegocio:', item.IdItemNegocio);
+  console.log('[Eliminar] idNegocio:', idNegocio);
+
+  await eliminarItemNegocio(item.IdItemNegocio, idNegocio);
+
+  setItems((prev) =>
+  prev.filter((i) => String(i.IdItemNegocio) !== String(item.IdItemNegocio))
+);
+
+  Alert.alert('Eliminado', 'El ítem se quitó del inventario.');
+} catch (e) {
       console.error('[ItemsNegocioScreen] eliminar:', e);
       Alert.alert('Error', e.message ?? 'No se pudo eliminar el ítem.');
       await cargar(true);
@@ -104,14 +143,27 @@ export default function ItemsNegocioScreen({ navigation, refreshKey }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Inventario</Text>
-        <DeunaButton
-          title="Agregar"
-          onPress={() => navigation.navigate('CrearItem')}
-          style={styles.btnHeader}
-        />
-      </View>
+     <View style={styles.header}>
+  <Pressable
+   onPress={() => {
+  if (navigation.canGoBack()) {
+    navigation.goBack();
+  } else {
+    navigation.navigate('DashboardNegocio');
+  }
+}}
+  >
+    <Ionicons name="arrow-back" size={22} color={colors.primary} />
+  </Pressable>
+
+  <Text style={styles.title}>Inventario</Text>
+
+  <DeunaButton
+    title="Agregar"
+    onPress={() => navigation.navigate('CrearItem')}
+    style={styles.btnHeader}
+  />
+</View>
 
       {loading ? (
         <ActivityIndicator color={colors.primary} style={styles.loader} />
@@ -136,7 +188,7 @@ export default function ItemsNegocioScreen({ navigation, refreshKey }) {
             </View>
           }
           renderItem={({ item }) => {
-            const borrando = eliminandoId === item.IdItemNegocio;
+            const borrando = String(eliminandoId) === String(item.IdItemNegocio);
             return (
               <DeunaCard style={styles.card}>
                 <View style={styles.cardTop}>
@@ -161,24 +213,7 @@ export default function ItemsNegocioScreen({ navigation, refreshKey }) {
                     <Ionicons name="create-outline" size={18} color={colors.primary} />
                     <Text style={styles.actionText}>Editar</Text>
                   </Pressable>
-                  <Pressable
-                    onPress={() => confirmarEliminar(item)}
-                    style={({ pressed }) => [
-                      styles.actionBtn,
-                      styles.deleteBtn,
-                      pressed && styles.actionPressed,
-                    ]}
-                    disabled={borrando}
-                  >
-                    {borrando ? (
-                      <ActivityIndicator size="small" color={colors.danger} />
-                    ) : (
-                      <>
-                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                        <Text style={[styles.actionText, styles.deleteText]}>Eliminar</Text>
-                      </>
-                    )}
-                  </Pressable>
+                 
                 </View>
               </DeunaCard>
             );

@@ -139,6 +139,11 @@ export default function DashboardNegocioScreen({ navigation }) {
           }}
           style={styles.gap}
         />
+        <DeunaButton
+  title="Crear promoción"
+  variant="outline"
+  onPress={() => navigation.navigate('CrearPromocion')}
+/>
       </ScrollView>
     </SafeAreaView>
   );

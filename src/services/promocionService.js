@@ -1,49 +1,71 @@
 import { supabase } from '../config/supabase';
 
-const TABLE = 'Promociones';
+const TABLE_PROMOCIONES = 'Promociones';
 
-export async function listarPromocionesPorNegocio(idNegocio) {
+export async function obtenerPromocionesActivasCliente() {
+  const ahora = new Date().toISOString();
+
   const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .eq('IdNegocio', idNegocio)
+    .from(TABLE_PROMOCIONES)
+    .select(`
+      IdPromocion,
+      IdNegocio,
+      IdItemNegocio,
+      Titulo,
+      Descripcion,
+      TipoPromocion,
+      ValorDescuento,
+      HoraInicio,
+      HoraFin,
+      FechaInicio,
+      FechaFin,
+      Activa,
+      Negocios (
+        IdNegocio,
+        NombreNegocio,
+        Direccion
+      ),
+      ItemsNegocio (
+        IdItemNegocio,
+        Nombre,
+        Precio,
+        TipoItem
+      )
+    `)
     .eq('Activa', true)
+    .lte('FechaInicio', ahora)
+    .or(`FechaFin.is.null,FechaFin.gte.${ahora}`)
     .order('FechaInicio', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    console.error('[obtenerPromocionesActivasCliente] error:', error);
+    throw new Error(error.message ?? 'No se pudieron cargar las promociones.');
+  }
+
   return data ?? [];
 }
 
-export async function crearPromocion(promocion) {
-  const { data, error } = await supabase.from(TABLE).insert(promocion).select().single();
-  if (error) throw error;
-  return data;
-}
-
-function horaActualComoTime() {
-  const d = new Date();
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${h}:${m}:00`;
-}
-
-/** ¿Hay promoción activa con ventana horaria que incluya ahora? */
 export async function esHorarioPromocionalActivo(idNegocio) {
-  const ahora = horaActualComoTime();
+  const ahora = new Date();
+  const horaActual = ahora.toTimeString().slice(0, 8);
+  const fechaActual = ahora.toISOString();
 
   const { data, error } = await supabase
-    .from(TABLE)
-    .select('IdPromocion, HoraInicio, HoraFin, Titulo')
+    .from(TABLE_PROMOCIONES)
+    .select('*')
     .eq('IdNegocio', idNegocio)
     .eq('Activa', true)
-    .not('HoraInicio', 'is', null)
-    .not('HoraFin', 'is', null);
+    .lte('FechaInicio', fechaActual)
+    .or(`FechaFin.is.null,FechaFin.gte.${fechaActual}`);
 
-  if (error) throw error;
+  if (error) {
+    console.error('[esHorarioPromocionalActivo] error:', error);
+    return false;
+  }
 
-  return (data ?? []).some((p) => {
-    const inicio = String(p.HoraInicio).slice(0, 8);
-    const fin = String(p.HoraFin).slice(0, 8);
-    return ahora >= inicio && ahora <= fin;
+  return (data ?? []).some((promo) => {
+    if (!promo.HoraInicio || !promo.HoraFin) return true;
+
+    return horaActual >= promo.HoraInicio && horaActual <= promo.HoraFin;
   });
 }

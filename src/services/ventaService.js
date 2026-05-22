@@ -23,6 +23,20 @@ function inicioDeSemana() {
   return d.toISOString();
 }
 
+function getItemId(item) {
+  return (
+    item?.idItemNegocio ??
+    item?.IdItemNegocio ??
+    item?.id_item_negocio ??
+    item?.IdItem ??
+    item?.id
+  );
+}
+
+function getCantidad(item) {
+  return Number(item?.cantidad ?? item?.Cantidad ?? 0);
+}
+
 export async function obtenerClientes() {
   const { data, error } = await supabase
     .from(TABLE_USUARIOS)
@@ -39,24 +53,32 @@ export async function obtenerResumenDashboard(idNegocio) {
   const desdeSemana = inicioDeSemana();
   const desdeHoy = inicioDelDia();
 
-  const [ventasSemanaRes, ventasHoyRes, alertasCountRes, negocioRes] = await Promise.all([
-    supabase
-      .from(TABLE_VENTAS)
-      .select('IdVenta, IdCliente, Total, FechaVenta')
-      .eq('IdNegocio', idNegocio)
-      .gte('FechaVenta', desdeSemana),
-    supabase
-      .from(TABLE_VENTAS)
-      .select('IdVenta, Total')
-      .eq('IdNegocio', idNegocio)
-      .gte('FechaVenta', desdeHoy),
-    supabase
-      .from('AlertasNegocio')
-      .select('*', { count: 'exact', head: true })
-      .eq('IdNegocio', idNegocio)
-      .eq('Leida', false),
-    supabase.from('Negocios').select('NombreNegocio').eq('IdNegocio', idNegocio).single(),
-  ]);
+  const [ventasSemanaRes, ventasHoyRes, alertasCountRes, negocioRes] =
+    await Promise.all([
+      supabase
+        .from(TABLE_VENTAS)
+        .select('IdVenta, IdCliente, Total, FechaVenta')
+        .eq('IdNegocio', idNegocio)
+        .gte('FechaVenta', desdeSemana),
+
+      supabase
+        .from(TABLE_VENTAS)
+        .select('IdVenta, Total')
+        .eq('IdNegocio', idNegocio)
+        .gte('FechaVenta', desdeHoy),
+
+      supabase
+        .from('AlertasNegocio')
+        .select('*', { count: 'exact', head: true })
+        .eq('IdNegocio', idNegocio)
+        .eq('Leida', false),
+
+      supabase
+        .from('Negocios')
+        .select('NombreNegocio')
+        .eq('IdNegocio', idNegocio)
+        .single(),
+    ]);
 
   if (ventasSemanaRes.error) throw ventasSemanaRes.error;
   if (ventasHoyRes.error) throw ventasHoyRes.error;
@@ -68,6 +90,7 @@ export async function obtenerResumenDashboard(idNegocio) {
   const idsVentasSemana = ventasSemana.map((v) => v.IdVenta);
 
   let itemsVendidos = 0;
+
   if (idsVentasSemana.length > 0) {
     const detallesRes = await supabase
       .from(TABLE_DETALLES)
@@ -75,16 +98,24 @@ export async function obtenerResumenDashboard(idNegocio) {
       .in('IdVenta', idsVentasSemana);
 
     if (detallesRes.error) throw detallesRes.error;
-    itemsVendidos = (detallesRes.data ?? []).reduce((sum, d) => sum + Number(d.Cantidad), 0);
+
+    itemsVendidos = (detallesRes.data ?? []).reduce(
+      (sum, d) => sum + Number(d.Cantidad),
+      0
+    );
   }
 
   const conteoClientes = {};
+
   ventasSemana.forEach((v) => {
     if (v.IdCliente) {
       conteoClientes[v.IdCliente] = (conteoClientes[v.IdCliente] || 0) + 1;
     }
   });
-  const clientesRecurrentes = Object.values(conteoClientes).filter((n) => n > 1).length;
+
+  const clientesRecurrentes = Object.values(conteoClientes).filter(
+    (n) => n > 1
+  ).length;
 
   const totalHoy = ventasHoy.reduce((sum, v) => sum + Number(v.Total), 0);
   const totalSemana = ventasSemana.reduce((sum, v) => sum + Number(v.Total), 0);
@@ -103,7 +134,11 @@ export async function obtenerResumenDashboard(idNegocio) {
 
 export async function descontarStock(item, cantidad) {
   if (!item.ManejaStock) {
-    return { ...item, nuevoStock: null, nuevoEstado: item.Estado };
+    return {
+      ...item,
+      nuevoStock: null,
+      nuevoEstado: item.Estado,
+    };
   }
 
   const nuevoStock = Number(item.Stock) - Number(cantidad);
@@ -114,7 +149,11 @@ export async function descontarStock(item, cantidad) {
     Estado: nuevoEstado,
   });
 
-  return { ...actualizado, nuevoStock, nuevoEstado };
+  return {
+    ...actualizado,
+    nuevoStock,
+    nuevoEstado,
+  };
 }
 
 async function crearAlertaPorEstado(item, estado) {
@@ -136,23 +175,93 @@ async function crearAlertaPorEstado(item, estado) {
 export async function crearVentaConDetalle({
   idNegocio,
   idCliente,
-  idItemNegocio,
-  cantidad,
+  idItemNegocio = null,
+  cantidad = null,
+  items = [],
 }) {
-  const item = await obtenerItemPorId(idItemNegocio);
-  const qty = Number(cantidad);
+  let detalleItems = [];
 
-  if (qty <= 0) {
-    throw new Error('La cantidad debe ser mayor a 0');
+  if (Array.isArray(items) && items.length > 0) {
+    detalleItems = items.map((x) => ({
+      idItemNegocio: getItemId(x),
+      cantidad: getCantidad(x),
+    }));
   }
 
-  if (item.ManejaStock && Number(item.Stock) < qty) {
-    throw new Error(`Stock insuficiente. Disponible: ${item.Stock}`);
+  if (detalleItems.length === 0 && idItemNegocio) {
+    detalleItems = [
+      {
+        idItemNegocio,
+        cantidad: Number(cantidad),
+      },
+    ];
   }
 
-  const precioUnitario = Number(item.Precio);
-  const subtotal = precioUnitario * qty;
-  const total = subtotal;
+  console.log('[crearVentaConDetalle] idNegocio:', idNegocio);
+  console.log('[crearVentaConDetalle] idCliente:', idCliente);
+  console.log('[crearVentaConDetalle] items recibidos:', items);
+  console.log('[crearVentaConDetalle] detalleItems:', detalleItems);
+
+  if (!idNegocio) {
+    throw new Error('No se recibió el ID del negocio.');
+  }
+
+  if (!idCliente) {
+    throw new Error('No se recibió el ID del cliente.');
+  }
+
+  if (detalleItems.length === 0) {
+    throw new Error('Agrega al menos un ítem a la venta.');
+  }
+
+  for (const detalle of detalleItems) {
+    if (!detalle.idItemNegocio) {
+      throw new Error('No se recibió el ID del ítem.');
+    }
+
+    if (!detalle.cantidad || detalle.cantidad <= 0) {
+      throw new Error('La cantidad debe ser mayor a 0.');
+    }
+  }
+
+  const itemsCompletos = [];
+
+  for (const detalle of detalleItems) {
+    const item = await obtenerItemPorId(detalle.idItemNegocio);
+
+    if (!item) {
+      throw new Error('Uno de los ítems no existe.');
+    }
+
+    if (String(item.IdNegocio) !== String(idNegocio)) {
+      throw new Error(`El ítem "${item.Nombre}" no pertenece a este negocio.`);
+    }
+
+    if (item.Activo === false) {
+      throw new Error(`El ítem "${item.Nombre}" no está activo.`);
+    }
+
+    if (item.ManejaStock && Number(item.Stock) < Number(detalle.cantidad)) {
+      throw new Error(
+        `Stock insuficiente para "${item.Nombre}". Disponible: ${item.Stock}`
+      );
+    }
+
+    const precioUnitario = Number(item.Precio);
+    const subtotal = precioUnitario * Number(detalle.cantidad);
+
+    itemsCompletos.push({
+      item,
+      cantidad: Number(detalle.cantidad),
+      precioUnitario,
+      subtotal,
+    });
+  }
+
+  const total = itemsCompletos.reduce(
+    (sum, detalle) => sum + Number(detalle.subtotal),
+    0
+  );
 
   const ventaRes = await supabase
     .from(TABLE_VENTAS)
@@ -168,35 +277,58 @@ export async function crearVentaConDetalle({
     .select()
     .single();
 
-  if (ventaRes.error) throw ventaRes.error;
+  if (ventaRes.error) {
+    console.error('[crearVentaConDetalle] error venta:', ventaRes.error);
+    throw ventaRes.error;
+  }
+
+  const detallesPayload = itemsCompletos.map((detalle) => ({
+    IdVenta: ventaRes.data.IdVenta,
+    IdItemNegocio: detalle.item.IdItemNegocio,
+    Cantidad: detalle.cantidad,
+    PrecioUnitario: detalle.precioUnitario,
+    Subtotal: detalle.subtotal,
+  }));
 
   const detalleRes = await supabase
     .from(TABLE_DETALLES)
-    .insert({
-      IdVenta: ventaRes.data.IdVenta,
-      IdItemNegocio: idItemNegocio,
-      Cantidad: qty,
-      PrecioUnitario: precioUnitario,
-      Subtotal: subtotal,
-    })
-    .select()
-    .single();
+    .insert(detallesPayload)
+    .select();
 
-  if (detalleRes.error) throw detalleRes.error;
+  if (detalleRes.error) {
+    console.error('[crearVentaConDetalle] error detalle:', detalleRes.error);
+    throw detalleRes.error;
+  }
 
-  const itemActualizado = await descontarStock(item, qty);
-  await crearAlertaPorEstado(itemActualizado, itemActualizado.Estado);
+  const itemsActualizados = [];
+
+  for (const detalle of itemsCompletos) {
+    const itemActualizado = await descontarStock(
+      detalle.item,
+      detalle.cantidad
+    );
+
+    await crearAlertaPorEstado(itemActualizado, itemActualizado.Estado);
+
+    itemsActualizados.push(itemActualizado);
+  }
 
   return {
     venta: ventaRes.data,
-    detalle: detalleRes.data,
-    item: itemActualizado,
+    detalle: detalleRes.data?.[0] ?? null,
+    detalles: detalleRes.data ?? [],
+    items: itemsActualizados,
     total,
   };
 }
 
 /** Simula pago QR del cliente: crea venta mínima y devuelve datos para ruleta. */
-export async function simularPagoCliente({ idCliente, idNegocio, idItemNegocio, cantidad = 1 }) {
+export async function simularPagoCliente({
+  idCliente,
+  idNegocio,
+  idItemNegocio,
+  cantidad = 1,
+}) {
   return crearVentaConDetalle({
     idNegocio,
     idCliente,
