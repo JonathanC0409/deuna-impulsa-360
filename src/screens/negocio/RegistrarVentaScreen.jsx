@@ -1,27 +1,27 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  Modal,
-  FlatList,
-  Pressable,
-  Alert,
-  ActivityIndicator,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Modal,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
 import DeunaButton from '../../components/DeunaButton';
 import DeunaCard from '../../components/DeunaCard';
-import { colors } from '../../theme/colors';
 import { useAuth } from '../../context/AuthContext';
 import { obtenerItemsNegocio } from '../../services/itemService';
-import { obtenerClientes, crearVentaConDetalle } from '../../services/ventaService';
-import { esHorarioPromocionalActivo } from '../../services/promocionService';
 import { obtenerNegocio } from '../../services/negocioService';
+import { esHorarioPromocionalActivo } from '../../services/promocionService';
+import { crearVentaConDetalle, obtenerClientes } from '../../services/ventaService';
+import { colors } from '../../theme/colors';
 
 function getItemId(item) {
   return (
@@ -267,7 +267,7 @@ export default function RegistrarVentaScreen({ navigation }) {
 
     const itemsParaVenta = detalleVenta.map((x) => ({
       idItemNegocio: getItemId(x),
-      cantidad: x.Cantidad,
+      cantidad: Number(x.Cantidad) || 0,
     }));
 
     const itemSinId = itemsParaVenta.find((x) => !x.idItemNegocio);
